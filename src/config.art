@@ -4,7 +4,7 @@
 // Adónde llegan los pedidos: el email de Chipa Club, o el alias que da FormSubmit al activarlo
 // (ver README). Vacío: el pedido se copia y se manda por DM de Instagram.
 const ORDERS_EMAIL = "chipaclub.es@gmail.com"
-const SITE_URL = "https://leb90.github.io/chipaclub"
+const SITE_URL = "https://chipaclub.es"
 const INSTAGRAM = "chipaclub.es"
 const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM}/`
 const INSTAGRAM_DM = `https://ig.me/m/${INSTAGRAM}`

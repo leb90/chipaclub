@@ -2,7 +2,17 @@
 
 Web de [@chipaclub.es](https://www.instagram.com/chipaclub.es/): las variedades de chipa congelada y un formulario de pedido (nombre, teléfono, dirección y cantidades).
 
-Publicada en **https://leb90.github.io/chipaclub/**. Cada push a `main` la vuelve a publicar sola (GitHub Actions → Pages).
+Publicada en **https://chipaclub.es**. Cada push a `main` la vuelve a publicar sola (GitHub Actions → Pages).
+
+El dominio está en Hostinger y solo apunta a GitHub Pages (en Hostinger no se sube nada). Registros DNS:
+
+| Tipo | Nombre | Contenido |
+|---|---|---|
+| A | @ | 185.199.108.153 |
+| A | @ | 185.199.109.153 |
+| A | @ | 185.199.110.153 |
+| A | @ | 185.199.111.153 |
+| CNAME | www | leb90.github.io |
 
 Hecha con [ArtScript](https://artscript.dev). Todos los `.art` de `src/` forman un solo programa (no hacen falta imports):
 

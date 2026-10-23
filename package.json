@@ -8,7 +8,7 @@
     "start": "art dev",
     "build": "art build",
     "check": "art check",
-    "build:pages": "art build --base /chipaclub --prerender --site https://leb90.github.io/chipaclub"
+    "build:pages": "art build --prerender --site https://chipaclub.es"
   },
   "devDependencies": {
     "@artscript/core": "^0.2.15",
