@@ -8,6 +8,7 @@ const INSTAGRAM = "chipaclub.es"
 const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM}/`
 const INSTAGRAM_DM = `https://ig.me/m/${INSTAGRAM}`
 const BAG = "500 g"
+const SHIPPING = "Envíos solo en Valencia"
 const MAX_BAGS = 30
 
 model Product {
@@ -25,7 +26,7 @@ const PRODUCTS = [
   {
     id: "chorizo-colorado",
     name: "Chorizo colorado",
-    desc: "Con trocitos de chorizo colorado y mucho queso.",
+    desc: "Con trocitos de chorizo colorado y mucho queso. ¡Amor a primera mordida!",
     price: 10,
     photo: "/photos/chipa-chorizo-colorado-detalle.jpg",
     alt: "Chipa con trocitos de chorizo colorado",
@@ -34,19 +35,19 @@ const PRODUCTS = [
   {
     id: "queso-azul-nuez",
     name: "Queso azul y nuez",
-    desc: "Con queso azul, nuez y mucho queso.",
+    desc: "Con queso azul, nuez y mucho queso. Un sabor único, que sorprende en cada bocado.",
     price: 10,
-    photo: "/illustrations/chipa-queso-azul-nuez.svg",
-    alt: "Ilustración de una chipa de queso azul y nuez",
+    photo: "/photos/chipa-queso-azul-nuez-detalle.jpg",
+    alt: "Chipa con queso azul y trozos de nuez",
     tag: null,
   },
   {
     id: "longaniza-pascua",
     name: "Longaniza de Pascua",
-    desc: "Con trocitos de longaniza de Pascua y mucho queso.",
+    desc: "Con trocitos de longaniza de Pascua y mucho queso. Un clásico con todo el sabor de la tradición.",
     price: 10,
-    photo: "/illustrations/chipa-longaniza-pascua.svg",
-    alt: "Ilustración de una chipa de longaniza de Pascua",
+    photo: "/photos/chipa-longaniza-pascua-detalle.jpg",
+    alt: "Chipa con trocitos de longaniza de Pascua",
     tag: null,
   },
   {
@@ -62,7 +63,7 @@ const PRODUCTS = [
 
 const STEPS = [
   { n: "1", head: "Elegí tus variedades", body: `Bolsas de ${BAG}: combiná los sabores que quieras.` },
-  { n: "2", head: "Dejanos tus datos", body: "Te escribimos para confirmar el pedido y coordinar la entrega." },
+  { n: "2", head: "Dejanos tus datos", body: `Te escribimos para confirmar el pedido y coordinar la entrega. ${SHIPPING}.` },
   { n: "3", head: "Al horno y a disfrutar", body: "Llega congelada: la horneás cuando te apetezca y sale calentita, como recién hecha." },
 ]
 
@@ -186,7 +187,7 @@ component ProductCard(p: Product) {
 }
 
 page Home "/" {
-  meta title="Chipa Club · Chipa congelada lista para hornear" description="Chipa congelada, lista para hornear y disfrutar calentita: chorizo colorado, queso azul y nuez, longaniza de Pascua y la clásica. Desde Valencia, pedidos online." image=(`${SITE_URL}/photos/chipa-chorizo-colorado.jpg`)
+  meta title="Chipa Club · Chipa congelada lista para hornear" description="Chipa congelada, lista para hornear y disfrutar calentita: chorizo colorado, queso azul y nuez, longaniza de Pascua y la clásica. ${SHIPPING}." image=(`${SITE_URL}/photos/chipa-chorizo-colorado.jpg`)
   state name = ""
   state phone = ""
   state address = ""
@@ -275,6 +276,10 @@ page Home "/" {
   }
 
   column class="site" {
+    row class="topbar" gap=2 justify=center align=center {
+      icon "truck" size=16
+      text SHIPPING
+    }
     row tag=header class="nav" justify=between align=center {
       link href="#inicio" class="nav-logo" aria-label="Chipa Club, inicio" {
         image "/photos/logo-chipa-club.png" alt="Chipa Club"
@@ -304,6 +309,7 @@ page Home "/" {
           link "Ver variedades" href="#variedades" class="btn btn-ghost"
         }
         row class="perks" gap=2 wrap {
+          text `🚚 ${SHIPPING}` class="perk is-strong"
           text "❄️ Congelada" class="perk"
           text "🔥 Lista para hornear" class="perk"
           text "🧀 Mucho queso" class="perk"
@@ -322,7 +328,7 @@ page Home "/" {
     }
     column tag=section id="variedades" class="section wrap" gap=8 {
       SectionHead kicker="Nuestras variedades" heading="Elegí tu favorita (o llevate todas)" {
-        text `Bolsas de ${BAG}, congeladas y listas para el horno.` class="section-sub"
+        text `Bolsas de ${BAG}, congeladas y listas para el horno. ${SHIPPING}.` class="section-sub"
       }
       grid class="products" cols=1 sm:cols=2 lg:cols=4 gap=5 stagger {
         for p in PRODUCTS key p.id {
@@ -367,14 +373,14 @@ page Home "/" {
     }
     column tag=section id="pedido" class="order wrap" ref=orderBox {
       SectionHead kicker="Tu pedido" heading="Hacé tu pedido" light=true {
-        text "Completá tus datos y te escribimos para confirmar y coordinar la entrega." class="section-sub"
+        text `Completá tus datos y te escribimos para confirmar y coordinar la entrega. ${SHIPPING}.` class="section-sub"
       }
       if placed {
         column class="placed" gap=4 align=center animate=pop {
           text "✓" class="placed-check" aria-hidden="true"
           if placed.via == "email" {
             title `¡Gracias, ${placed.name}!` tag=h3 class="placed-title"
-            text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega.` class="placed-text"
+            text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega en Valencia.` class="placed-text"
           } else {
             title "Último paso: mandanos el pedido por DM" tag=h3 class="placed-title"
             if placed.failed {
@@ -416,7 +422,11 @@ page Home "/" {
           form class="order-form" gap=4 -> submit() {
             input name label="Nombre y apellido" placeholder="Ej. Ana García"
             input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456"
-            textarea address label="Dirección de entrega" placeholder="Calle, número, piso y código postal" rows=2
+            row class="zone-note" gap=2 align=center role="note" {
+              icon "map-pin" size=18
+              text `${SHIPPING}.`
+            }
+            textarea address label="Dirección de entrega (en Valencia)" placeholder="Calle, número, piso y código postal" rows=2
             textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2
             if error {
               text error class="form-error" role="alert"
@@ -432,7 +442,7 @@ page Home "/" {
       image "/photos/logo-chipa-club.png" alt="Chipa Club" class="footer-logo"
       text "Elegí ser feliz ♡" class="hand-note"
       row class="footer-links" gap=5 wrap justify=center {
-        text "📍 Valencia, España"
+        text `🚚 ${SHIPPING}`
         link `@${INSTAGRAM}` href=INSTAGRAM_URL target="_blank"
         link "Pedidos también por DM" href=INSTAGRAM_DM target="_blank"
       }
@@ -452,6 +462,7 @@ test "suma variedades y calcula el total" {
   click "Agregar Chorizo colorado"
   click "Agregar Clásica"
   click "Sumar una bolsa de Clásica"
+  see "Envíos solo en Valencia"
   see "3 bolsas"
   see "Enviar pedido · 26 €"
 }

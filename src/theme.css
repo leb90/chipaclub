@@ -159,6 +159,16 @@ a { color: inherit; }
 
 /* ---------- navegación ---------- */
 
+.topbar {
+  padding: 7px 16px;
+  background: var(--cocoa);
+  color: var(--butter);
+  font-weight: 800;
+  font-size: .92rem;
+  letter-spacing: .01em;
+  text-align: center;
+}
+
 .nav {
   position: sticky;
   top: 0;
@@ -219,6 +229,8 @@ a { color: inherit; }
   background: var(--paper);
   border: 1px solid var(--line);
 }
+
+.perk.is-strong { background: var(--mustard); border-color: var(--mustard); }
 
 .hero-art { position: relative; align-items: center; padding: 20px 8px; }
 .hero-art::before {
@@ -467,6 +479,15 @@ a { color: inherit; }
   box-shadow: 0 0 0 4px rgb(242 174 46 / .25);
   background: var(--paper);
 }
+.zone-note {
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--butter-soft);
+  border: 1px dashed var(--mustard-deep);
+  font-weight: 700;
+  line-height: 1.35;
+}
+.zone-note .a-icon { flex: none; color: var(--caramel); }
 .form-error {
   padding: 10px 14px;
   border-radius: 12px;

@@ -24,7 +24,9 @@ Mientras `ORDERS_EMAIL` esté vacío, o si el envío falla, el pedido no se pier
 
 ## Cambiar productos o precios
 
-Están en la lista `PRODUCTS` de [src/app.art](src/app.art). Para agregar una variedad, sumá una entrada y poné su foto en [public/photos/](public/photos/). Queso azul y nuez y Longaniza de Pascua usan por ahora ilustraciones ([public/illustrations/](public/illustrations/)); cuando tengan foto, cambiá el `photo` de esas entradas.
+Están en la lista `PRODUCTS` de [src/app.art](src/app.art). Para agregar una variedad, sumá una entrada y poné su foto en [public/photos/](public/photos/).
+
+El aviso de envíos ("Envíos solo en Valencia") es la constante `SHIPPING` del mismo archivo: aparece en la franja de arriba, la portada, las variedades, el formulario y el pie.
 
 ## Fotos
 
@@ -32,12 +34,18 @@ Están en la lista `PRODUCTS` de [src/app.art](src/app.art). Para agregar una va
 |---|---|
 | `chipa-chorizo-colorado.jpg` | Póster de la chipa de chorizo colorado (imagen para compartir el link) |
 | `chipa-chorizo-colorado-detalle.jpg` | Recorte del póster, sin texto (foto del producto) |
+| `chipa-queso-azul-nuez.jpg` | Póster de la chipa de queso azul y nuez |
+| `chipa-queso-azul-nuez-detalle.jpg` | Recorte del póster, sin texto (foto del producto) |
+| `chipa-longaniza-pascua.jpg` | Póster de la chipa de longaniza de Pascua |
+| `chipa-longaniza-pascua-detalle.jpg` | Recorte del póster, sin texto (foto del producto) |
 | `chipa-clasica-mano.jpg` | Chipa clásica en la mano (portada y producto) |
 | `chipa-frases.jpg` | Las 4 ilustraciones "Chipa es amor y tradición" (recortadas de la captura) |
 | `chipa-frases-captura.jpg` | La captura original del móvil |
 | `carta-variedades.jpg` | La carta con precios |
 | `chipa-tenes-un-problema.jpg` | Post "¿Tenés un problema?" |
 | `logo-chipa-club.png` | Logo con fondo transparente (sacado de la carta) |
+
+El favicon (`public/favicon.png`) y el ícono para iPhone (`public/apple-touch-icon.png`) son el logo sobre fondo crema.
 
 ## Desarrollo
 
