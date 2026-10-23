@@ -4,7 +4,20 @@ Web de [@chipaclub.es](https://www.instagram.com/chipaclub.es/): las variedades 
 
 Publicada en **https://leb90.github.io/chipaclub/**. Cada push a `main` la vuelve a publicar sola (GitHub Actions → Pages).
 
-Hecha con [ArtScript](https://artscript.dev). Todo el sitio está en [src/app.art](src/app.art) y los estilos en [src/theme.css](src/theme.css).
+Hecha con [ArtScript](https://artscript.dev). Todos los `.art` de `src/` forman un solo programa (no hacen falta imports):
+
+| Archivo | Qué tiene |
+|---|---|
+| [src/config.art](src/config.art) | **Lo que se cambia seguido:** email de pedidos, variedades y precios, aviso de envíos, pasos |
+| [src/app.art](src/app.art) | La página: las secciones en orden |
+| [src/sections/](src/sections/) | Una sección por archivo: `Nav`, `Hero`, `Products`, `HowItWorks`, `Club`, `OrderSection` (formulario, envío y confirmación), `Footer`, `FloatingCart` |
+| [src/ui/](src/ui/) | Piezas reutilizables: `SectionHead`, `Stepper`, `ProductCard` |
+| [src/cart.art](src/cart.art) | El carrito y el formato de precios |
+| [src/order.art](src/order.art) | Código de pedido, texto para DM y envío por email |
+| [src/tests.art](src/tests.art) | Tests de los flujos principales |
+| [src/theme.css](src/theme.css) | Colores, tipografías y estilos |
+
+Los archivos se cargan en orden alfabético, así que el estado compartido no puede usar al arrancar datos de un archivo que va después (por eso el carrito empieza vacío).
 
 ## Activar los pedidos por email
 
@@ -12,7 +25,7 @@ Los pedidos llegan a **chipaclub.es@gmail.com**. El sitio es estático (GitHub P
 
 Para cambiar el destino:
 
-1. En [src/app.art](src/app.art), poné el email en la primera constante:
+1. En [src/config.art](src/config.art), poné el email en la primera constante:
    ```
    const ORDERS_EMAIL = "chipaclub.es@gmail.com"
    ```
@@ -24,7 +37,7 @@ Mientras `ORDERS_EMAIL` esté vacío, o si el envío falla, el pedido no se pier
 
 ## Cambiar productos o precios
 
-Están en la lista `PRODUCTS` de [src/app.art](src/app.art). Para agregar una variedad, sumá una entrada y poné su foto en [public/photos/](public/photos/).
+Están en la lista `PRODUCTS` de [src/config.art](src/config.art). Para agregar una variedad, sumá una entrada y poné su foto en [public/photos/](public/photos/).
 
 El aviso de envíos ("Envíos solo en Valencia") es la constante `SHIPPING` del mismo archivo: aparece en la franja de arriba, la portada, las variedades, el formulario y el pie.
 

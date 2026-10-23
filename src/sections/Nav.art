@@ -1,0 +1,24 @@
+// Franja de envíos (se va al hacer scroll) y el header fijo.
+component Topbar() {
+  row class="topbar" gap=2 justify=center align=center {
+    icon "truck" size=16
+    text SHIPPING
+  }
+}
+
+component Nav() {
+  row tag=header class="nav" justify=between align=center {
+    link href="#inicio" class="nav-logo" aria-label="Chipa Club, inicio" {
+      image "/photos/logo-chipa-club.png" alt="Chipa Club"
+    }
+    row tag=nav class="nav-links" gap=6 align=center {
+      link "Variedades" href="#variedades"
+      link "Cómo funciona" href="#como-funciona"
+      link "El club" href="#el-club"
+    }
+    link href="#pedido" class="nav-cart" {
+      icon "shopping-bag" size=18
+      text (bags > 0 ? plural(bags, "bolsa", "bolsas") : "Pedir")
+    }
+  }
+}

@@ -1,0 +1,159 @@
+// El formulario de pedido: cantidades, datos del cliente, envío y confirmación.
+component OrderSection() {
+  state name = ""
+  state phone = ""
+  state address = ""
+  state notes = ""
+  state sending = false
+  state error = ""
+  state copied = false
+  ref box
+
+  mount {
+    let io = new IntersectionObserver(entries => {
+      orderInView = entries[0].isIntersecting
+    }, { threshold: 0.12 })
+    io.observe(box)
+    cleanup {
+      io.disconnect()
+    }
+  }
+
+  fn copyOrder() {
+    try {
+      await navigator.clipboard.writeText(orderText(placed))
+      copied = true
+    } catch (e) {
+      copied = false
+    }
+  }
+
+  fn submit() {
+    error = ""
+    if bags == 0 {
+      error = "Elegí al menos una bolsa de chipa."
+      return
+    }
+    if name.trim().length < 2 {
+      error = "Decinos tu nombre."
+      return
+    }
+    if phone.replace(/\D/g, "").length < 9 {
+      error = "Revisá el teléfono: necesitamos al menos 9 cifras."
+      return
+    }
+    if address.trim().length < 6 {
+      error = "Necesitamos la dirección de entrega."
+      return
+    }
+    let order = {
+      code: orderCode(),
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      notes: notes.trim(),
+      items: lines,
+      total,
+      via: "email",
+      failed: false,
+    }
+    if ORDERS_EMAIL {
+      sending = true
+      let problem = ""
+      try {
+        problem = await sendByEmail(order)
+      } catch (e) {
+        problem = e.message
+      } finally {
+        sending = false
+      }
+      if problem {
+        console.error("Chipa Club: el pedido no se pudo enviar por email:", problem)
+        order.via = "dm"
+        order.failed = true
+      }
+    } else {
+      order.via = "dm"
+    }
+    placed = order
+    if order.via == "dm" {
+      await copyOrder()
+    }
+    clearCart()
+    notes = ""
+  }
+
+  fn another() {
+    placed = null
+    copied = false
+    navigate("/#variedades")
+  }
+
+  column tag=section id="pedido" class="order wrap" ref=box {
+    SectionHead kicker="Tu pedido" heading="Hacé tu pedido" light=true {
+      text `Completá tus datos y te escribimos para confirmar y coordinar la entrega. ${SHIPPING}.` class="section-sub"
+    }
+    if placed {
+      column class="placed" gap=4 align=center animate=pop {
+        text "✓" class="placed-check" aria-hidden="true"
+        if placed.via == "email" {
+          title `¡Gracias, ${placed.name}!` tag=h3 class="placed-title"
+          text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega en Valencia.` class="placed-text"
+        } else {
+          title "Último paso: mandanos el pedido por DM" tag=h3 class="placed-title"
+          if placed.failed {
+            text "No pudimos enviarlo automáticamente, pero no se pierde: mandalo por Instagram y listo." class="placed-text"
+          }
+          text (copied ? "Ya copiamos tu pedido. Abrí el chat de Instagram, pegalo y envialo." : "Copiá tu pedido, abrí el chat de Instagram, pegalo y envialo.") class="placed-text"
+          text orderText(placed) class="placed-ticket" tag=pre
+          row gap=3 wrap justify=center {
+            link href=INSTAGRAM_DM target="_blank" class="btn btn-mustard" {
+              icon "send" size=18
+              text "Abrir el chat de Instagram"
+            }
+            button (copied ? "Copiado ✓" : "Copiar pedido") class="btn btn-ghost-light" -> copyOrder()
+          }
+        }
+        button "Hacer otro pedido" class="btn-link" -> another()
+      }
+    } else {
+      grid class="order-grid" cols=1 lg:cols=2 gap=6 {
+        column class="ticket" gap=4 {
+          title "Elegí cantidades" tag=h3 class="ticket-title"
+          for p in PRODUCTS key p.id {
+            row class="ticket-row" gap=3 align=center {
+              column class="ticket-thumb" {
+                image p.photo alt=""
+              }
+              column class="ticket-name" {
+                text p.name bold
+                text `${eur(p.price)} · ${BAG}` class="ticket-meta"
+              }
+              Stepper id=p.id label=p.name dark=true
+            }
+          }
+          row class="ticket-total" justify=between align=center {
+            text (bags > 0 ? plural(bags, "bolsa", "bolsas") : "Todavía no elegiste")
+            text eur(total) class="ticket-sum"
+          }
+        }
+        form class="order-form" gap=4 -> submit() {
+          input name label="Nombre y apellido" placeholder="Ej. Ana García"
+          input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456"
+          row class="zone-note" gap=2 align=center role="note" {
+            icon "map-pin" size=18
+            text `${SHIPPING}.`
+          }
+          textarea address label="Dirección de entrega (en Valencia)" placeholder="Calle, número, piso y código postal" rows=2
+          textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2
+          if error {
+            text error class="form-error" role="alert"
+          }
+          button (sending ? "Enviando…" : bags > 0 ? `Enviar pedido · ${eur(total)}` : "Enviar pedido") class="btn btn-mustard btn-block" disabled=sending
+          text (ORDERS_EMAIL ? "Sin pago online: lo arreglamos cuando te escribamos." : "Al enviarlo, lo copiamos para que nos lo mandes por DM de Instagram.") class="form-hint"
+          text "Usamos tus datos solo para preparar y entregar este pedido." class="form-hint"
+        }
+      }
+    }
+  }
+}

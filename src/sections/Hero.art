@@ -1,0 +1,34 @@
+component Hero() {
+  grid tag=section id="inicio" class="hero wrap" cols=1 md:cols=2 gap=10 align=center {
+    column class="hero-copy" gap=5 animate=rise {
+      text "Desde Valencia, con amor por la chipa" class="hand-note"
+      column tag=h1 class="hero-title" {
+        text "¿Antojo de chipa?" class="hero-line"
+        text "¡Somos tu "
+        text "club" class="hl"
+        text "!"
+      }
+      text "Chipa congelada, lista para hornear y disfrutar calentita, recién hecha, cuando más te apetezca." class="lead"
+      row class="hero-actions" gap=3 wrap {
+        link "Hacer mi pedido" href="#pedido" class="btn btn-primary"
+        link "Ver variedades" href="#variedades" class="btn btn-ghost"
+      }
+      row class="perks" gap=2 wrap {
+        text `🚚 ${SHIPPING}` class="perk is-strong"
+        text "❄️ Congelada" class="perk"
+        text "🔥 Lista para hornear" class="perk"
+        text "🧀 Mucho queso" class="perk"
+      }
+    }
+    column class="hero-art" animate=zoom delay=120 {
+      column class="polaroid" {
+        image "/photos/chipa-clasica-mano.jpg" alt="Una chipa recién horneada en la palma de la mano"
+        text "pequeña por fuera, gigante por dentro ♡" class="polaroid-caption"
+      }
+      column class="sticker" aria-hidden="true" {
+        text "desde" class="sticker-small"
+        text eur(Math.min(...PRODUCTS.map(p => p.price)))
+      }
+    }
+  }
+}

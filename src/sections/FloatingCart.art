@@ -1,0 +1,10 @@
+// Resumen fijo abajo mientras hay bolsas elegidas y el formulario no está en pantalla.
+component FloatingCart() {
+  if bags > 0 && !orderInView && !placed {
+    link href="#pedido" class="float-cart" animate=pop {
+      icon "shopping-bag" size=18
+      text `${plural(bags, "bolsa", "bolsas")} · ${eur(total)}`
+      text "Ver pedido" class="float-cta"
+    }
+  }
+}

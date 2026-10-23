@@ -1,0 +1,12 @@
+component Footer() {
+  column tag=footer class="footer wrap" gap=4 align=center {
+    image "/photos/logo-chipa-club.png" alt="Chipa Club" class="footer-logo"
+    text "Elegí ser feliz ♡" class="hand-note"
+    row class="footer-links" gap=5 wrap justify=center {
+      text `🚚 ${SHIPPING}`
+      link `@${INSTAGRAM}` href=INSTAGRAM_URL target="_blank"
+      link "Pedidos también por DM" href=INSTAGRAM_DM target="_blank"
+    }
+    text `© ${new Date().getFullYear()} Chipa Club` class="footer-copy"
+  }
+}

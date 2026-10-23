@@ -1,0 +1,13 @@
+component Products() {
+  column tag=section id="variedades" class="section wrap" gap=8 {
+    SectionHead kicker="Nuestras variedades" heading="Elegí tu favorita (o llevate todas)" {
+      text `Bolsas de ${BAG}, congeladas y listas para el horno. ${SHIPPING}.` class="section-sub"
+    }
+    grid class="products" cols=1 sm:cols=2 lg:cols=4 gap=5 stagger {
+      for p in PRODUCTS key p.id {
+        ProductCard p=p
+      }
+    }
+    text "Próximamente, nuevas variedades ♡" class="soon"
+  }
+}

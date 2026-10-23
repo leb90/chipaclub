@@ -1,0 +1,24 @@
+// El carrito: bolsas elegidas por variedad, compartido por todas las secciones.
+
+// Empieza vacío (una variedad sin cantidad es 0): los archivos se cargan en orden alfabético y
+// este va antes que config.art, así que al arrancar PRODUCTS todavía no existe.
+state cart = {}
+computed lines = PRODUCTS.filter(p => (cart[p.id] ?? 0) > 0).map(p => ({ ...p, qty: cart[p.id] }))
+computed bags = lines.reduce((n, l) => n + l.qty, 0)
+computed total = lines.reduce((n, l) => n + l.qty * l.price, 0)
+
+fn setQty(id, n) {
+  cart[id] = Math.max(0, Math.min(MAX_BAGS, n))
+}
+
+fn clearCart() {
+  cart = {}
+}
+
+fn eur(n) {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)
+}
+
+fn plural(n, one, many) {
+  return `${n} ${n == 1 ? one : many}`
+}

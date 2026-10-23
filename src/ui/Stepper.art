@@ -1,0 +1,10 @@
+// − cantidad + de una variedad del carrito.
+component Stepper(id: String, label: String, dark: Bool = false) {
+  computed qty = cart[id] ?? 0
+
+  row class=(dark ? "stepper is-dark" : "stepper") role="group" aria-label=`Cantidad de ${label}` {
+    button "−" class="step" aria-label=`Quitar una bolsa de ${label}` disabled=(qty == 0) -> setQty(id, qty - 1)
+    text qty class="qty" aria-live="polite"
+    button "+" class="step" aria-label=`Sumar una bolsa de ${label}` disabled=(qty >= MAX_BAGS) -> setQty(id, qty + 1)
+  }
+}

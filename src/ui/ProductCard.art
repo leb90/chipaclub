@@ -1,0 +1,28 @@
+// Tarjeta de una variedad: foto, descripción, precio y el botón para sumarla al pedido.
+component ProductCard(p: Product) {
+  computed qty = cart[p.id] ?? 0
+
+  card class=(qty > 0 ? "product is-picked" : "product") {
+    column class="product-photo" {
+      image p.photo alt=p.alt
+      if p.tag {
+        text p.tag class="product-tag"
+      }
+    }
+    column class="product-body" gap=2 {
+      title p.name tag=h3 class="product-name"
+      text p.desc class="product-desc"
+      row class="product-foot" justify=between align=end {
+        column class="price-box" {
+          text BAG class="price-weight"
+          text eur(p.price) class="price"
+        }
+        if qty == 0 {
+          button "Agregar" class="btn btn-add" aria-label=`Agregar ${p.name}` -> setQty(p.id, 1)
+        } else {
+          Stepper id=p.id label=p.name
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+// El pedido: su código, el texto para DM y el envío por email.
+
+// Compartidos con la barra flotante: el último pedido enviado y si el formulario está en pantalla.
+state placed: Any = null
+state orderInView = false
+
+// Un código corto para seguir el pedido por teléfono o DM: CC-7K2M.
+fn orderCode() {
+  let abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  let bytes = crypto.getRandomValues(new Uint8Array(4))
+  return "CC-" + Array.from(bytes, b => abc[b % abc.length]).join("")
+}
+
+// Un móvil español sin prefijo (9 cifras) lleva el 34 delante.
+fn whatsappLink(phone) {
+  let digits = phone.replace(/\D/g, "").replace(/^00/, "")
+  return `https://wa.me/${digits.length == 9 ? "34" + digits : digits}`
+}
+
+fn itemsText(items) {
+  return items.map(l => `${l.qty} × ${l.name} (${BAG}): ${eur(l.qty * l.price)}`).join("\n")
+}
+
+fn orderText(o) {
+  return [
+    `¡Hola Chipa Club! Quiero hacer un pedido (${o.code}):`,
+    "",
+    itemsText(o.items),
+    `Total: ${eur(o.total)}`,
+    "",
+    `Nombre: ${o.name}`,
+    `Teléfono: ${o.phone}`,
+    `Dirección: ${o.address}`,
+    o.notes ? `Notas: ${o.notes}` : "",
+  ].join("\n").trim()
+}
+
+// FormSubmit reenvía el pedido al email (sin servidor propio: el sitio es estático).
+// Devuelve "" si llegó, o el motivo por el que no.
+fn sendByEmail(o) {
+  let res = await fetch(`https://formsubmit.co/ajax/${ORDERS_EMAIL}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      _subject: `Nuevo pedido ${o.code} · ${o.name} · ${eur(o.total)}`,
+      _template: "table",
+      _captcha: "false",
+      "Pedido": o.code,
+      "Productos": itemsText(o.items),
+      "Total": eur(o.total),
+      "Nombre": o.name,
+      "Teléfono": o.phone,
+      "WhatsApp": whatsappLink(o.phone),
+      "Dirección": o.address,
+      "Notas": o.notes || "—",
+      "Fecha": new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid", dateStyle: "full", timeStyle: "short" }),
+    }),
+  })
+  let data = await res.json().catch(() => ({}))
+  return res.ok && String(data.success) == "true" ? "" : data.message ?? `HTTP ${res.status}`
+}

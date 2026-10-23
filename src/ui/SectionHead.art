@@ -1,0 +1,8 @@
+// Encabezado de sección: etiqueta manuscrita, título y (en el slot) un subtítulo.
+component SectionHead(kicker: String, heading: String, light: Bool = false) {
+  column class=(light ? "section-head is-light" : "section-head") gap=3 align=center {
+    text kicker class="kicker"
+    title heading tag=h2 class="section-title"
+    slot
+  }
+}

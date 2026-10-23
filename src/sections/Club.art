@@ -1,0 +1,24 @@
+component Club() {
+  grid tag=section id="el-club" class="section club wrap" cols=1 md:cols=2 gap=10 align=center {
+    column class="club-art" reveal {
+      image "/photos/chipa-frases.jpg" alt="Ilustraciones de Chipa Club: chipa es amor y tradición, pequeña por fuera y gigante por dentro, chipa al rescate, la felicidad también tiene sabor a chipa"
+    }
+    column class="club-copy" gap=4 reveal {
+      text "El club" class="kicker"
+      column tag=h2 class="section-title" {
+        text "Chipa es "
+        text "amor" class="hl"
+        text " y tradición"
+      }
+      text "Llegamos para llenar tus días de sabor, con ese amor por la chipa que nos une. Y esto recién empieza: muy pronto se vienen más variedades para sorprenderte." class="lead"
+      column class="quotes" gap=2 {
+        text "¿Día difícil? Chipa al rescate." class="quote"
+        text "La felicidad también tiene sabor a chipa." class="quote"
+      }
+      link href=INSTAGRAM_URL target="_blank" class="btn btn-ghost ig" {
+        icon "heart" size=18
+        text `Seguinos en @${INSTAGRAM}`
+      }
+    }
+  }
+}

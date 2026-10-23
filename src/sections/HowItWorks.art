@@ -1,0 +1,14 @@
+component HowItWorks() {
+  column tag=section id="como-funciona" class="section wrap" gap=8 {
+    SectionHead kicker="Así de fácil" heading="Del freezer a la mesa"
+    grid class="steps" cols=1 md:cols=3 gap=5 {
+      for s in STEPS key s.n {
+        column class="step-card" gap=2 reveal {
+          text s.n class="step-n"
+          title s.head tag=h3 class="step-head"
+          text s.body class="step-body"
+        }
+      }
+    }
+  }
+}

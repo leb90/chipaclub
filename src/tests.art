@@ -1,0 +1,29 @@
+// Flujos principales. Ninguno envía el pedido: con ORDERS_EMAIL puesto, mandaría un email de verdad.
+
+test "suma variedades y calcula el total" {
+  click "Agregar Chorizo colorado"
+  click "Agregar Clásica"
+  click "Sumar una bolsa de Clásica"
+  see "Envíos solo en Valencia"
+  see "3 bolsas"
+  see "Enviar pedido · 26 €"
+}
+
+test "pide los datos antes de enviar" {
+  click "Agregar Queso azul y nuez"
+  click "Enviar pedido · 10 €"
+  see "Decinos tu nombre."
+  fill "Ej. Ana García" "Ana"
+  fill "Ej. 600 123 456" "600 12"
+  click "Enviar pedido · 10 €"
+  see "Revisá el teléfono"
+}
+
+test "el ticket ajusta cantidades y total" {
+  click "Agregar Longaniza de Pascua"
+  click "Sumar una bolsa de Longaniza de Pascua"
+  see "Enviar pedido · 20 €"
+  click "Quitar una bolsa de Longaniza de Pascua" 1
+  see "Enviar pedido · 10 €"
+  see "Sin pago online"
+}
