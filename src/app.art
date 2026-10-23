@@ -2,7 +2,7 @@
 
 // Adónde llegan los pedidos: el email de Chipa Club, o el alias que da FormSubmit al activarlo
 // (ver README). Vacío: el pedido se copia y se manda por DM de Instagram.
-const ORDERS_EMAIL = ""
+const ORDERS_EMAIL = "chipaclub.es@gmail.com"
 const SITE_URL = "https://leb90.github.io/chipaclub"
 const INSTAGRAM = "chipaclub.es"
 const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM}/`
@@ -466,14 +466,11 @@ test "pide los datos antes de enviar" {
   see "Revisá el teléfono"
 }
 
-test "sin email configurado, el pedido se manda por DM" {
+test "el ticket ajusta cantidades y total" {
   click "Agregar Longaniza de Pascua"
-  fill "Ej. Ana García" "Ana García"
-  fill "Ej. 600 123 456" "600 123 456"
-  fill "Calle, número, piso y código postal" "Calle de Colón 1, 46004 Valencia"
-  click "Enviar pedido · 10 €"
-  see "Último paso: mandanos el pedido por DM"
-  see "1 × Longaniza de Pascua"
-  click "Hacer otro pedido"
-  see "Elegí cantidades"
+  click "Sumar una bolsa de Longaniza de Pascua"
+  see "Enviar pedido · 20 €"
+  click "Quitar una bolsa de Longaniza de Pascua" 1
+  see "Enviar pedido · 10 €"
+  see "Sin pago online"
 }

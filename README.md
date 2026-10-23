@@ -8,11 +8,13 @@ Hecha con [ArtScript](https://artscript.dev). Todo el sitio está en [src/app.ar
 
 ## Activar los pedidos por email
 
-El sitio es estático (GitHub Pages no tiene servidor), así que los pedidos se envían por email con [FormSubmit](https://formsubmit.co), que es gratis y no pide cuenta.
+Los pedidos llegan a **chipaclub.es@gmail.com**. El sitio es estático (GitHub Pages no tiene servidor), así que se envían con [FormSubmit](https://formsubmit.co), que es gratis y no pide cuenta.
+
+Para cambiar el destino:
 
 1. En [src/app.art](src/app.art), poné el email en la primera constante:
    ```
-   const ORDERS_EMAIL = "pedidos@chipaclub.es"
+   const ORDERS_EMAIL = "chipaclub.es@gmail.com"
    ```
 2. Hacé push a `main` y esperá a que se publique (un par de minutos).
 3. Hacé un pedido de prueba desde la web. FormSubmit manda a ese email un mensaje **"Activate Form"**: hay que abrirlo y confirmar. Desde ahí, cada pedido llega como email con una tabla: código, productos, total, nombre, teléfono (con link directo a WhatsApp), dirección, notas y fecha.
