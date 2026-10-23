@@ -1,0 +1,479 @@
+// Chipa Club: chipa congelada lista para hornear (Valencia). Catálogo y pedidos.
+
+// Adónde llegan los pedidos: el email de Chipa Club, o el alias que da FormSubmit al activarlo
+// (ver README). Vacío: el pedido se copia y se manda por DM de Instagram.
+const ORDERS_EMAIL = ""
+const SITE_URL = "https://leb90.github.io/chipaclub"
+const INSTAGRAM = "chipaclub.es"
+const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM}/`
+const INSTAGRAM_DM = `https://ig.me/m/${INSTAGRAM}`
+const BAG = "500 g"
+const MAX_BAGS = 30
+
+model Product {
+  id: String
+  name: String
+  desc: String
+  price: Number
+  photo: String
+  alt: String
+  tag: String?
+}
+
+// La carta. Para sumar una variedad, agregala acá (la foto va en public/photos).
+const PRODUCTS = [
+  {
+    id: "chorizo-colorado",
+    name: "Chorizo colorado",
+    desc: "Con trocitos de chorizo colorado y mucho queso.",
+    price: 10,
+    photo: "/photos/chipa-chorizo-colorado-detalle.jpg",
+    alt: "Chipa con trocitos de chorizo colorado",
+    tag: "El más amado",
+  },
+  {
+    id: "queso-azul-nuez",
+    name: "Queso azul y nuez",
+    desc: "Con queso azul, nuez y mucho queso.",
+    price: 10,
+    photo: "/illustrations/chipa-queso-azul-nuez.svg",
+    alt: "Ilustración de una chipa de queso azul y nuez",
+    tag: null,
+  },
+  {
+    id: "longaniza-pascua",
+    name: "Longaniza de Pascua",
+    desc: "Con trocitos de longaniza de Pascua y mucho queso.",
+    price: 10,
+    photo: "/illustrations/chipa-longaniza-pascua.svg",
+    alt: "Ilustración de una chipa de longaniza de Pascua",
+    tag: null,
+  },
+  {
+    id: "clasica",
+    name: "Clásica",
+    desc: "Solo queso. La de siempre, la que nunca falla.",
+    price: 8,
+    photo: "/photos/chipa-clasica-mano.jpg",
+    alt: "Una chipa clásica de queso en la palma de la mano",
+    tag: null,
+  },
+]
+
+const STEPS = [
+  { n: "1", head: "Elegí tus variedades", body: `Bolsas de ${BAG}: combiná los sabores que quieras.` },
+  { n: "2", head: "Dejanos tus datos", body: "Te escribimos para confirmar el pedido y coordinar la entrega." },
+  { n: "3", head: "Al horno y a disfrutar", body: "Llega congelada: la horneás cuando te apetezca y sale calentita, como recién hecha." },
+]
+
+state cart = Object.fromEntries(PRODUCTS.map(p => [p.id, 0]))
+computed lines = PRODUCTS.filter(p => cart[p.id] > 0).map(p => ({ ...p, qty: cart[p.id] }))
+computed bags = lines.reduce((n, l) => n + l.qty, 0)
+computed total = lines.reduce((n, l) => n + l.qty * l.price, 0)
+
+fn setQty(id, n) {
+  cart[id] = Math.max(0, Math.min(MAX_BAGS, n))
+}
+
+fn eur(n) {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)
+}
+
+fn plural(n, one, many) {
+  return `${n} ${n == 1 ? one : many}`
+}
+
+// Un código corto para seguir el pedido por teléfono o DM: CC-7K2M.
+fn orderCode() {
+  let abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  let bytes = crypto.getRandomValues(new Uint8Array(4))
+  return "CC-" + Array.from(bytes, b => abc[b % abc.length]).join("")
+}
+
+// Un móvil español sin prefijo (9 cifras) lleva el 34 delante.
+fn whatsappLink(phone) {
+  let digits = phone.replace(/\D/g, "").replace(/^00/, "")
+  return `https://wa.me/${digits.length == 9 ? "34" + digits : digits}`
+}
+
+fn itemsText(items) {
+  return items.map(l => `${l.qty} × ${l.name} (${BAG}): ${eur(l.qty * l.price)}`).join("\n")
+}
+
+fn orderText(o) {
+  return [
+    `¡Hola Chipa Club! Quiero hacer un pedido (${o.code}):`,
+    "",
+    itemsText(o.items),
+    `Total: ${eur(o.total)}`,
+    "",
+    `Nombre: ${o.name}`,
+    `Teléfono: ${o.phone}`,
+    `Dirección: ${o.address}`,
+    o.notes ? `Notas: ${o.notes}` : "",
+  ].join("\n").trim()
+}
+
+// FormSubmit reenvía el pedido al email (sin servidor propio: el sitio es estático).
+// Devuelve "" si llegó, o el motivo por el que no.
+fn sendByEmail(o) {
+  let res = await fetch(`https://formsubmit.co/ajax/${ORDERS_EMAIL}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      _subject: `Nuevo pedido ${o.code} · ${o.name} · ${eur(o.total)}`,
+      _template: "table",
+      _captcha: "false",
+      "Pedido": o.code,
+      "Productos": itemsText(o.items),
+      "Total": eur(o.total),
+      "Nombre": o.name,
+      "Teléfono": o.phone,
+      "WhatsApp": whatsappLink(o.phone),
+      "Dirección": o.address,
+      "Notas": o.notes || "—",
+      "Fecha": new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid", dateStyle: "full", timeStyle: "short" }),
+    }),
+  })
+  let data = await res.json().catch(() => ({}))
+  return res.ok && String(data.success) == "true" ? "" : data.message ?? `HTTP ${res.status}`
+}
+
+component SectionHead(kicker: String, heading: String, light: Bool = false) {
+  column class=(light ? "section-head is-light" : "section-head") gap=3 align=center {
+    text kicker class="kicker"
+    title heading tag=h2 class="section-title"
+    slot
+  }
+}
+
+component Stepper(id: String, label: String, dark: Bool = false) {
+  computed qty = cart[id] ?? 0
+
+  row class=(dark ? "stepper is-dark" : "stepper") role="group" aria-label=`Cantidad de ${label}` {
+    button "−" class="step" aria-label=`Quitar una bolsa de ${label}` disabled=(qty == 0) -> setQty(id, qty - 1)
+    text qty class="qty" aria-live="polite"
+    button "+" class="step" aria-label=`Sumar una bolsa de ${label}` disabled=(qty >= MAX_BAGS) -> setQty(id, qty + 1)
+  }
+}
+
+component ProductCard(p: Product) {
+  computed qty = cart[p.id] ?? 0
+
+  card class=(qty > 0 ? "product is-picked" : "product") {
+    column class="product-photo" {
+      image p.photo alt=p.alt
+      if p.tag {
+        text p.tag class="product-tag"
+      }
+    }
+    column class="product-body" gap=2 {
+      title p.name tag=h3 class="product-name"
+      text p.desc class="product-desc"
+      row class="product-foot" justify=between align=end {
+        column class="price-box" {
+          text BAG class="price-weight"
+          text eur(p.price) class="price"
+        }
+        if qty == 0 {
+          button "Agregar" class="btn btn-add" aria-label=`Agregar ${p.name}` -> setQty(p.id, 1)
+        } else {
+          Stepper id=p.id label=p.name
+        }
+      }
+    }
+  }
+}
+
+page Home "/" {
+  meta title="Chipa Club · Chipa congelada lista para hornear" description="Chipa congelada, lista para hornear y disfrutar calentita: chorizo colorado, queso azul y nuez, longaniza de Pascua y la clásica. Desde Valencia, pedidos online." image=(`${SITE_URL}/photos/chipa-chorizo-colorado.jpg`)
+  state name = ""
+  state phone = ""
+  state address = ""
+  state notes = ""
+  state sending = false
+  state error = ""
+  state placed: Any = null
+  state copied = false
+  state orderInView = false
+  ref orderBox
+  mount {
+    let io = new IntersectionObserver(entries => { orderInView = entries[0].isIntersecting }, { threshold: 0.12 })
+    io.observe(orderBox)
+    cleanup {
+      io.disconnect()
+    }
+  }
+  fn copyOrder() {
+    try {
+      await navigator.clipboard.writeText(orderText(placed))
+      copied = true
+    } catch (e) {
+      copied = false
+    }
+  }
+  fn submit() {
+    error = ""
+    if bags == 0 {
+      error = "Elegí al menos una bolsa de chipa."
+      return
+    }
+    if name.trim().length < 2 {
+      error = "Decinos tu nombre."
+      return
+    }
+    if phone.replace(/\D/g, "").length < 9 {
+      error = "Revisá el teléfono: necesitamos al menos 9 cifras."
+      return
+    }
+    if address.trim().length < 6 {
+      error = "Necesitamos la dirección de entrega."
+      return
+    }
+    let order = {
+      code: orderCode(),
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      notes: notes.trim(),
+      items: lines,
+      total,
+      via: "email",
+      failed: false
+    }
+    if ORDERS_EMAIL {
+      sending = true
+      let problem = ""
+      try {
+        problem = await sendByEmail(order)
+      } catch (e) {
+        problem = e.message
+      } finally {
+        sending = false
+      }
+      if problem {
+        console.error("Chipa Club: el pedido no se pudo enviar por email:", problem)
+        order.via = "dm"
+        order.failed = true
+      }
+    } else {
+      order.via = "dm"
+    }
+    placed = order
+    if order.via == "dm" {
+      await copyOrder()
+    }
+    for p in PRODUCTS {
+      cart[p.id] = 0
+    }
+    notes = ""
+  }
+  fn another() {
+    placed = null
+    copied = false
+    navigate("/#variedades")
+  }
+
+  column class="site" {
+    row tag=header class="nav" justify=between align=center {
+      link href="#inicio" class="nav-logo" aria-label="Chipa Club, inicio" {
+        image "/photos/logo-chipa-club.png" alt="Chipa Club"
+      }
+      row tag=nav class="nav-links" gap=6 align=center {
+        link "Variedades" href="#variedades"
+        link "Cómo funciona" href="#como-funciona"
+        link "El club" href="#el-club"
+      }
+      link href="#pedido" class="nav-cart" {
+        icon "shopping-bag" size=18
+        text (bags > 0 ? plural(bags, "bolsa", "bolsas") : "Pedir")
+      }
+    }
+    grid tag=section id="inicio" class="hero wrap" cols=1 md:cols=2 gap=10 align=center {
+      column class="hero-copy" gap=5 animate=rise {
+        text "Desde Valencia, con amor por la chipa" class="hand-note"
+        column tag=h1 class="hero-title" {
+          text "¿Antojo de chipa?" class="hero-line"
+          text "¡Somos tu "
+          text "club" class="hl"
+          text "!"
+        }
+        text "Chipa congelada, lista para hornear y disfrutar calentita, recién hecha, cuando más te apetezca." class="lead"
+        row class="hero-actions" gap=3 wrap {
+          link "Hacer mi pedido" href="#pedido" class="btn btn-primary"
+          link "Ver variedades" href="#variedades" class="btn btn-ghost"
+        }
+        row class="perks" gap=2 wrap {
+          text "❄️ Congelada" class="perk"
+          text "🔥 Lista para hornear" class="perk"
+          text "🧀 Mucho queso" class="perk"
+        }
+      }
+      column class="hero-art" animate=zoom delay=120 {
+        column class="polaroid" {
+          image "/photos/chipa-clasica-mano.jpg" alt="Una chipa recién horneada en la palma de la mano"
+          text "pequeña por fuera, gigante por dentro ♡" class="polaroid-caption"
+        }
+        column class="sticker" aria-hidden="true" {
+          text "desde" class="sticker-small"
+          text eur(Math.min(...PRODUCTS.map(p => p.price)))
+        }
+      }
+    }
+    column tag=section id="variedades" class="section wrap" gap=8 {
+      SectionHead kicker="Nuestras variedades" heading="Elegí tu favorita (o llevate todas)" {
+        text `Bolsas de ${BAG}, congeladas y listas para el horno.` class="section-sub"
+      }
+      grid class="products" cols=1 sm:cols=2 lg:cols=4 gap=5 stagger {
+        for p in PRODUCTS key p.id {
+          ProductCard p=p
+        }
+      }
+      text "Próximamente, nuevas variedades ♡" class="soon"
+    }
+    column tag=section id="como-funciona" class="section wrap" gap=8 {
+      SectionHead kicker="Así de fácil" heading="Del freezer a la mesa"
+      grid class="steps" cols=1 md:cols=3 gap=5 {
+        for s in STEPS key s.n {
+          column class="step-card" gap=2 reveal {
+            text s.n class="step-n"
+            title s.head tag=h3 class="step-head"
+            text s.body class="step-body"
+          }
+        }
+      }
+    }
+    grid tag=section id="el-club" class="section club wrap" cols=1 md:cols=2 gap=10 align=center {
+      column class="club-art" reveal {
+        image "/photos/chipa-frases.jpg" alt="Ilustraciones de Chipa Club: chipa es amor y tradición, pequeña por fuera y gigante por dentro, chipa al rescate, la felicidad también tiene sabor a chipa"
+      }
+      column class="club-copy" gap=4 reveal {
+        text "El club" class="kicker"
+        column tag=h2 class="section-title" {
+          text "Chipa es "
+          text "amor" class="hl"
+          text " y tradición"
+        }
+        text "Llegamos para llenar tus días de sabor, con ese amor por la chipa que nos une. Y esto recién empieza: muy pronto se vienen más variedades para sorprenderte." class="lead"
+        column class="quotes" gap=2 {
+          text "¿Día difícil? Chipa al rescate." class="quote"
+          text "La felicidad también tiene sabor a chipa." class="quote"
+        }
+        link href=INSTAGRAM_URL target="_blank" class="btn btn-ghost ig" {
+          icon "heart" size=18
+          text `Seguinos en @${INSTAGRAM}`
+        }
+      }
+    }
+    column tag=section id="pedido" class="order wrap" ref=orderBox {
+      SectionHead kicker="Tu pedido" heading="Hacé tu pedido" light=true {
+        text "Completá tus datos y te escribimos para confirmar y coordinar la entrega." class="section-sub"
+      }
+      if placed {
+        column class="placed" gap=4 align=center animate=pop {
+          text "✓" class="placed-check" aria-hidden="true"
+          if placed.via == "email" {
+            title `¡Gracias, ${placed.name}!` tag=h3 class="placed-title"
+            text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega.` class="placed-text"
+          } else {
+            title "Último paso: mandanos el pedido por DM" tag=h3 class="placed-title"
+            if placed.failed {
+              text "No pudimos enviarlo automáticamente, pero no se pierde: mandalo por Instagram y listo." class="placed-text"
+            }
+            text (copied ? "Ya copiamos tu pedido. Abrí el chat de Instagram, pegalo y envialo." : "Copiá tu pedido, abrí el chat de Instagram, pegalo y envialo.") class="placed-text"
+            text orderText(placed) class="placed-ticket" tag=pre
+            row gap=3 wrap justify=center {
+              link href=INSTAGRAM_DM target="_blank" class="btn btn-mustard" {
+                icon "send" size=18
+                text "Abrir el chat de Instagram"
+              }
+              button (copied ? "Copiado ✓" : "Copiar pedido") class="btn btn-ghost-light" -> copyOrder()
+            }
+          }
+          button "Hacer otro pedido" class="btn-link" -> another()
+        }
+      } else {
+        grid class="order-grid" cols=1 lg:cols=2 gap=6 {
+          column class="ticket" gap=4 {
+            title "Elegí cantidades" tag=h3 class="ticket-title"
+            for p in PRODUCTS key p.id {
+              row class="ticket-row" gap=3 align=center {
+                column class="ticket-thumb" {
+                  image p.photo alt=""
+                }
+                column class="ticket-name" {
+                  text p.name bold
+                  text `${eur(p.price)} · ${BAG}` class="ticket-meta"
+                }
+                Stepper id=p.id label=p.name dark=true
+              }
+            }
+            row class="ticket-total" justify=between align=center {
+              text (bags > 0 ? plural(bags, "bolsa", "bolsas") : "Todavía no elegiste")
+              text eur(total) class="ticket-sum"
+            }
+          }
+          form class="order-form" gap=4 -> submit() {
+            input name label="Nombre y apellido" placeholder="Ej. Ana García"
+            input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456"
+            textarea address label="Dirección de entrega" placeholder="Calle, número, piso y código postal" rows=2
+            textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2
+            if error {
+              text error class="form-error" role="alert"
+            }
+            button (sending ? "Enviando…" : bags > 0 ? `Enviar pedido · ${eur(total)}` : "Enviar pedido") class="btn btn-mustard btn-block" disabled=sending
+            text (ORDERS_EMAIL ? "Sin pago online: lo arreglamos cuando te escribamos." : "Al enviarlo, lo copiamos para que nos lo mandes por DM de Instagram.") class="form-hint"
+            text "Usamos tus datos solo para preparar y entregar este pedido." class="form-hint"
+          }
+        }
+      }
+    }
+    column tag=footer class="footer wrap" gap=4 align=center {
+      image "/photos/logo-chipa-club.png" alt="Chipa Club" class="footer-logo"
+      text "Elegí ser feliz ♡" class="hand-note"
+      row class="footer-links" gap=5 wrap justify=center {
+        text "📍 Valencia, España"
+        link `@${INSTAGRAM}` href=INSTAGRAM_URL target="_blank"
+        link "Pedidos también por DM" href=INSTAGRAM_DM target="_blank"
+      }
+      text `© ${new Date().getFullYear()} Chipa Club` class="footer-copy"
+    }
+    if bags > 0 && !orderInView && !placed {
+      link href="#pedido" class="float-cart" animate=pop {
+        icon "shopping-bag" size=18
+        text `${plural(bags, "bolsa", "bolsas")} · ${eur(total)}`
+        text "Ver pedido" class="float-cta"
+      }
+    }
+  }
+}
+
+test "suma variedades y calcula el total" {
+  click "Agregar Chorizo colorado"
+  click "Agregar Clásica"
+  click "Sumar una bolsa de Clásica"
+  see "3 bolsas"
+  see "Enviar pedido · 26 €"
+}
+
+test "pide los datos antes de enviar" {
+  click "Agregar Queso azul y nuez"
+  click "Enviar pedido · 10 €"
+  see "Decinos tu nombre."
+  fill "Ej. Ana García" "Ana"
+  fill "Ej. 600 123 456" "600 12"
+  click "Enviar pedido · 10 €"
+  see "Revisá el teléfono"
+}
+
+test "sin email configurado, el pedido se manda por DM" {
+  click "Agregar Longaniza de Pascua"
+  fill "Ej. Ana García" "Ana García"
+  fill "Ej. 600 123 456" "600 123 456"
+  fill "Calle, número, piso y código postal" "Calle de Colón 1, 46004 Valencia"
+  click "Enviar pedido · 10 €"
+  see "Último paso: mandanos el pedido por DM"
+  see "1 × Longaniza de Pascua"
+  click "Hacer otro pedido"
+  see "Elegí cantidades"
+}

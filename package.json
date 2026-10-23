@@ -1,0 +1,17 @@
+{
+  "name": "chipaclub",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "art dev",
+    "start": "art dev",
+    "build": "art build",
+    "check": "art check",
+    "build:pages": "art build --base /chipaclub --prerender --site https://leb90.github.io/chipaclub"
+  },
+  "devDependencies": {
+    "@artscript/core": "^0.2.14",
+    "@happy-dom/global-registrator": "^20.14.5"
+  }
+}
