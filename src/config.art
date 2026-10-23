@@ -9,11 +9,12 @@ const INSTAGRAM = "chipaclub.es"
 const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM}/`
 const INSTAGRAM_DM = `https://ig.me/m/${INSTAGRAM}`
 const BAG = "500 g"
-const SHIPPING = "Envíos solo en Valencia"
-// Zona de envío para el buscador de direcciones: el municipio y su código en CartoCiudad
-// (muniCode; 46250 es València ciudad). Una dirección fuera de estos códigos no se acepta.
-const DELIVERY_CITY = "València"
-const DELIVERY_MUNI_CODES = ["46250"]
+const SHIPPING = "Envíos solo en la Comunitat Valenciana"
+// Zona de envío para el buscador de direcciones: la comunidad como la nombran CartoCiudad y Photon,
+// su código en CartoCiudad (comunidadAutonomaCode) y el recuadro que la contiene (oeste, sur, este, norte).
+const DELIVERY_REGION = "Comunitat Valenciana"
+const DELIVERY_REGION_CODE = "10"
+const DELIVERY_BBOX = "-1.53,37.84,0.69,40.79"
 const MAX_BAGS = 30
 
 model Product {
@@ -74,7 +75,7 @@ const STEPS = [
 
 // Preguntas frecuentes: solo lo que Chipa Club ya confirmó (zona, pedidos, pago, bolsa, conservación).
 const FAQS = [
-  { q: "¿Hacen envíos fuera de Valencia?", a: "No: por ahora los envíos son solo en Valencia." },
+  { q: "¿Hacen envíos fuera de la Comunitat Valenciana?", a: "No: por ahora los envíos son solo dentro de la Comunitat Valenciana." },
   { q: "¿Cómo hago un pedido?", a: "Elegí tus variedades, completá tus datos en el formulario y envialo. También podés pedir por DM en Instagram." },
   { q: "¿Cómo se paga?", a: "No hay pago online: te escribimos para confirmar el pedido y coordinar el pago y la entrega." },
   { q: "¿Cuánto trae cada bolsa?", a: `Cada bolsa trae ${BAG} de chipa.` },

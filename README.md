@@ -46,12 +46,16 @@ Mientras `ORDERS_EMAIL` esté vacío, o si el envío falla, el pedido no se pier
 
 ## Dirección de entrega
 
-La dirección se elige de una lista de sugerencias, no se escribe libre (lo libre, como piso y puerta, va en Notas):
+Los envíos son a toda la **Comunitat Valenciana**. La dirección se elige de sugerencias, no se escribe libre (lo libre, como piso y puerta, va en Notas), en dos pasos, como en las apps de reparto:
 
-- Las sugerencias salen de [CartoCiudad](https://www.cartociudad.es), el buscador oficial de direcciones de España (Instituto Geográfico Nacional): gratis, sin clave y con número de portal. Solo se ofrecen portales dentro de la zona de envío; sin número, la web lo pide.
-- Al elegir, aparece el mapa del IGN con el pin en la dirección. El pedido llega con la dirección normalizada, el código postal y un link a Google Maps con la ubicación exacta.
-- La zona de envío está en [src/config.art](src/config.art): `DELIVERY_CITY` y `DELIVERY_MUNI_CODES` (46250 es València ciudad). Para sumar otro municipio, agregá el `muniCode` que devuelve CartoCiudad para una dirección de ahí.
-- Si el buscador no responde, se puede escribir la dirección a mano y el pedido llega marcado "sin verificar", para no perder ventas.
+1. **Mientras escribís el nombre de la calle** aparecen calles: las de València al instante, de una lista local en valenciano y castellano ([public/data/calles-valencia.json](public/data/calles-valencia.json)); las del resto de la Comunitat, de [Photon](https://photon.komoot.io) (sobre OpenStreetMap, completa palabras a medias) y de CartoCiudad.
+2. **Al elegir la calle** queda escrita y falta el número: con el número aparecen los portales de ese pueblo, de [CartoCiudad](https://www.cartociudad.es) (el buscador oficial de direcciones de España, del Instituto Geográfico Nacional), con su código postal.
+3. **Al elegir el portal** aparece el mapa del IGN con el pin. El pedido llega con la dirección normalizada, el código postal y un link a Google Maps con la ubicación exacta.
+
+Ninguno necesita clave ni servidor. Si los buscadores no responden, se puede escribir la dirección a mano y el pedido llega marcado "sin verificar".
+
+- La zona está en [src/config.art](src/config.art): `DELIVERY_REGION` (como la nombran CartoCiudad y Photon), `DELIVERY_REGION_CODE` y `DELIVERY_BBOX`.
+- La lista de calles de València sale de OpenStreetMap (© colaboradores de OpenStreetMap, [licencia ODbL](https://opendatacommons.org/licenses/odbl/)). Para actualizarla: `node scripts/calles-valencia.mjs` (si Overpass está saturado, probá más tarde).
 
 ## Pedidos repetidos o en masa
 

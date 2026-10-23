@@ -1,6 +1,17 @@
-// La dirección de entrega: búsqueda en CartoCiudad (buscador oficial de direcciones de España, del
-// IGN; gratis, sin clave) y el mapa base del IGN. Ninguno necesita servidor.
+// La dirección de entrega, en dos pasos: mientras se escribe el nombre, calles de Photon (sobre
+// OpenStreetMap, completa palabras a medias); con el número, portales de CartoCiudad (buscador
+// oficial de direcciones de España, del IGN). El mapa base es del IGN. Nada necesita servidor ni clave.
 
+const PHOTON = "https://photon.komoot.io/api/"
+// Las calles de València (donde está Chipa Club y la mayoría de los pedidos) se buscan en una lista
+// local, al instante y en valenciano o castellano: Photon hace búsqueda aproximada ("colo" trae
+// "Coello" antes que "Colón"). La genera scripts/calles-valencia.mjs, de OpenStreetMap.
+const CITY = "València"
+const CITY_STREETS_URL = "/data/calles-valencia.json"
+
+// [{ name, alt, words }] una vez cargada la lista; se pide la primera vez que se toca el campo.
+state cityStreets: Any[] = []
+state cityStreetsLoading = false
 const GEOCODER = "https://www.cartociudad.es/geocoder/api/geocoder/candidates"
 const MAP_TILES = "https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png"
 const TILE = 256
@@ -9,6 +20,9 @@ const TILE = 256
 const MAP_HALF_W = 250
 const MAP_HALF_H = 115
 const LOWER_WORDS = ["de", "del", "la", "las", "los", "el", "y", "i"]
+// El tipo de vía al principio ("calle de", "avinguda del", "plaza"...): en València los nombres
+// están en valenciano ("Carrer de Colón"), así que se busca sin él. "Gran Via" es parte del nombre.
+const STREET_TYPE = /^(calle|c\/|carrer|avenida|avda\.?|av\.?|avinguda|plaza|pza\.?|plaça|placa|paseo|passeig|camino|camí|ronda|travesía|travessia)\s+((de la|de les|de los|de las|del|dels|de|d'|la|el|les|els)\s*)?/i
 
 // "CALLE COLÓN 12, València" → "Calle Colón 12, València" (también "D'ALBORS" → "D'Albors").
 fn prettyAddress(text) {
@@ -17,26 +31,152 @@ fn prettyAddress(text) {
   return [words.join(" "), ...rest].join(", ")
 }
 
-// Hasta 5 portales (calle con número) dentro de la zona de envío, y un consejo cuando no hay.
-fn searchAddress(query, signal) {
-  let res = await fetch(`${GEOCODER}?q=${encodeURIComponent(query)}&limit=15&municipio_filter=${encodeURIComponent(DELIVERY_CITY)}`, { signal })
+// "Sagunt / Sagunto" (OpenStreetMap) → "Sagunt/Sagunto" (como lo escribe CartoCiudad).
+fn cartoTown(town) {
+  return town.replace(/\s*\/\s*/g, "/")
+}
+
+fn cartoCandidates(query, zone, signal) {
+  let res = await fetch(`${GEOCODER}?q=${encodeURIComponent(query)}&limit=15&${zone}`, { signal })
   if !res.ok {
     throw new Error(`CartoCiudad respondió ${res.status}`)
   }
-  let found = await res.json()
-  let inZone = found.filter(c => DELIVERY_MUNI_CODES.includes(c.muniCode))
-  let portals = inZone
-    .filter(c => c.type == "portal" && c.lat && c.lng)
-    .slice(0, 5)
-    .map(c => ({ id: c.id, label: prettyAddress(c.address), postalCode: c.postalCode ?? "", lat: c.lat, lng: c.lng }))
-  let hint = ""
-  // Sin número no hay portal que elegir (CartoCiudad no siempre devuelve la calle sola).
-  if portals.length == 0 {
-    hint = !/\d/.test(query) || inZone.some(c => c.type == "callejero")
-      ? "Agregá el número del portal, por ejemplo: Calle de Colón 12."
-      : `No encontramos esa dirección dentro de ${DELIVERY_CITY} (solo enviamos en la ciudad). Probá con la calle y el número.`
+  return await res.json()
+}
+
+fn inRegion() {
+  return `comunidad_autonoma_filter=${encodeURIComponent(DELIVERY_REGION)}`
+}
+
+fn photonStreets(query, bbox, signal) {
+  let res = await fetch(`${PHOTON}?q=${encodeURIComponent(query)}&limit=8&layer=street&bbox=${bbox}`, { signal })
+  if !res.ok {
+    throw new Error(`Photon respondió ${res.status}`)
   }
-  return { portals, hint }
+  let data = await res.json()
+  return data.features
+    .map(f => f.properties)
+    .filter(p => p.state == DELIVERY_REGION && p.name && (p.city ?? p.county))
+    .map(p => ({ id: `${p.name}|${p.city ?? p.county}`, kind: "street", name: p.name, town: p.city ?? p.county, source: "osm" }))
+}
+
+// Palabras de nombres de calles en castellano y su forma en valenciano, para reconocer "plaza del
+// ayuntamiento" en "Plaça de l'Ajuntament".
+const VALENCIAN = { ayuntamiento: "ajuntament", puerto: "port", mayor: "major", iglesia: "esglesia", reino: "regne", virgen: "verge", san: "sant", mercado: "mercat", rio: "riu", huerta: "horta", nuevo: "nou", nueva: "nova", cruz: "creu", fuente: "font", puente: "pont", molino: "moli", camino: "cami", baja: "baixa", plaza: "placa", calle: "carrer", avenida: "avinguda", paseo: "passeig" }
+
+fn plain(text) {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+}
+
+// La misma calle escrita por los dos buscadores ("Carrer de Colón" y "Calle Colón", en València).
+fn streetKey(street) {
+  return `${plain(street.name).replace(STREET_TYPE, "").trim()}|${plain(cartoTown(street.town).split("/")[0])}`
+}
+
+fn wordsOf(text) {
+  return plain(text).split(/[\s'’·,/-]+/).filter(Boolean)
+}
+
+// Cuánto se parecen las palabras de una calle a lo escrito: 0 si alguna palabra escrita no es el
+// comienzo de ninguna; tenerlas enteras pesa más que empezar como ellas.
+fn wordScore(words, typed) {
+  let forms = t => [t, VALENCIAN[t]].filter(Boolean)
+  if !typed.every(t => forms(t).some(f => words.some(w => w.startsWith(f)))) {
+    return 0
+  }
+  return 1 + (typed.every(t => forms(t).some(f => words.includes(f))) ? 2 : 0)
+}
+
+fn streetScore(street, typed) {
+  return wordScore(wordsOf(street.name), typed) + (street.town == CITY ? 0.5 : 0)
+}
+
+fn typedWords(query) {
+  return wordsOf(query.replace(STREET_TYPE, ""))
+}
+
+fn loadCityStreets() {
+  if cityStreets.length || cityStreetsLoading {
+    return
+  }
+  cityStreetsLoading = true
+  try {
+    let rows = await (await fetch(CITY_STREETS_URL)).json()
+    cityStreets = rows.map(([name, ...alt]) => ({ name, alt: alt[0] ?? "", words: wordsOf([name, ...alt].join(" ")) }))
+  } catch (e) {
+    console.error("Chipa Club: no se pudo cargar la lista de calles de València:", e)
+  } finally {
+    cityStreetsLoading = false
+  }
+}
+
+// Calles de València que coinciden con lo escrito, de la lista local (vacío si no se cargó).
+fn cityMatches(query) {
+  let typed = typedWords(query)
+  if typed.join("").length < 3 {
+    return []
+  }
+  let found = []
+  for s in cityStreets {
+    let score = wordScore(s.words, typed)
+    if score > 0 {
+      found.push({ s, score })
+    }
+  }
+  return found
+    .sort((a, b) => b.score - a.score || a.s.name.length - b.s.name.length)
+    .slice(0, 6)
+    .map(({ s }) => ({ id: `city|${s.name}`, kind: "street", name: s.name, alt: s.alt, town: CITY, source: "osm" }))
+}
+
+// Las calles de CartoCiudad (reconoce palabras completas, en castellano y en valenciano), las de
+// València primero.
+fn cartoStreets(query, signal) {
+  let found = await cartoCandidates(query, inRegion(), signal)
+  return found
+    .filter(c => c.type == "callejero" && c.comunidadAutonomaCode == DELIVERY_REGION_CODE)
+    .map(c => ({ id: c.id, kind: "street", name: prettyAddress(c.address.split(", ")[0]), town: c.muni, source: "ign" }))
+    .sort((a, b) => (b.town == CITY ? 1 : 0) - (a.town == CITY ? 1 : 0))
+}
+
+// Calles que coinciden con lo escrito, dentro de la zona de envío: [{ kind: "street", name, town }].
+// Primero las de València (lista local), después las del resto de la región: de Photon (completa
+// palabras a medias) y de CartoCiudad (palabras completas, castellano y valenciano). Si Photon no
+// responde (es un servicio de uso justo), quedan las de CartoCiudad.
+fn searchStreets(query, signal) {
+  let name = query.replace(STREET_TYPE, "").trim()
+  let local = cityMatches(query)
+  if name.length < 3 {
+    return local
+  }
+  let [osm, ign] = await Promise.all([
+    photonStreets(name, DELIVERY_BBOX, signal).catch(e => e.name == "AbortError" ? Promise.reject(e) : []),
+    cartoStreets(query, signal).catch(e => e.name == "AbortError" ? Promise.reject(e) : []),
+  ])
+  // Con la lista de València cargada, las calles de la ciudad salen de ahí (sin repetirlas escritas distinto).
+  let seen = new Set()
+  let typed = typedWords(query)
+  let others = [...osm, ...ign]
+    .filter(s => !(cityStreets.length && s.town == CITY))
+    .filter(s => !seen.has(streetKey(s)) && seen.add(streetKey(s)))
+    .filter(s => streetScore(s, typed) > 0.5 || s.source == "ign")
+    .sort((a, b) => streetScore(b, typed) - streetScore(a, typed))
+  return [...local.slice(0, others.length ? 4 : 6), ...others].slice(0, 6)
+}
+
+// Portales (calle con número) en la zona de envío; en el pueblo de la calle elegida si hay una.
+fn searchPortals(query, town, signal) {
+  let found = await cartoCandidates(query, town ? `municipio_filter=${encodeURIComponent(cartoTown(town))}` : inRegion(), signal)
+  let portals = found.filter(c => c.type == "portal" && c.lat && c.lng && c.comunidadAutonomaCode == DELIVERY_REGION_CODE)
+  // El pueblo escrito distinto en los dos buscadores: se busca nombrándolo en el texto.
+  if portals.length == 0 && town {
+    let alsoTown = await cartoCandidates(`${query} ${town.split("/")[0].trim()}`, inRegion(), signal)
+    portals = alsoTown.filter(c => c.type == "portal" && c.lat && c.lng && c.comunidadAutonomaCode == DELIVERY_REGION_CODE)
+  }
+  return portals.slice(0, 5).map(c => {
+    let full = prettyAddress(c.address)
+    return { id: c.id, kind: "portal", name: full.split(", ")[0], town: c.poblacion || c.muni, full, postalCode: c.postalCode ?? "", lat: c.lat, lng: c.lng }
+  })
 }
 
 fn mapsLink(spot) {

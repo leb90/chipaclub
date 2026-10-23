@@ -1,11 +1,13 @@
-// Dirección de entrega con sugerencias de CartoCiudad (combobox accesible: ↑ ↓ Enter Esc) y el mapa
-// del lugar elegido. `spot` es la dirección elegida de la lista ({ label, postalCode, lat, lng }) o
-// null; `offline` queda en true si el buscador no responde (entonces vale la dirección escrita).
+// Dirección de entrega en dos pasos, como en las apps de reparto: mientras se escribe aparecen
+// calles; al elegir una queda escrita y se agrega el número, que trae los portales de ese pueblo.
+// Combobox accesible (↑ ↓ Enter Esc). `spot` es el portal elegido ({ full, postalCode, lat, lng })
+// o null; `offline` queda en true si los buscadores no responden (entonces vale lo escrito).
 component AddressField(text: String, spot: Any, offline: Bool, invalid: Bool = false) {
   state options: Any[] = []
   state open = false
   state active = -1
   state hint = ""
+  state street: Any = null
   ref timer
   ref pending
 
@@ -14,25 +16,46 @@ component AddressField(text: String, spot: Any, offline: Bool, invalid: Bool = f
     spot = null
     active = -1
     clearTimeout(timer)
+    if street && !value.toLowerCase().startsWith(street.name.toLowerCase()) {
+      street = null
+    }
     let query = value.trim()
-    if query.length < 4 {
+    if query.length < 3 {
       options = []
       open = false
-      hint = ""
+      hint = street ? `Escribí el número del portal (${street.town}).` : ""
       return
     }
-    timer = setTimeout(() => lookup(query), 300)
+    // Las calles de València aparecen al instante; las del resto de la región llegan tras la pausa.
+    if !street && !/\d/.test(query) && cityStreets.length {
+      options = cityMatches(query)
+      open = options.length > 0
+      hint = ""
+    }
+    timer = setTimeout(() => lookup(query), 250)
   }
 
   fn lookup(query) {
     pending?.abort()
     let mine = new AbortController()
     pending = mine
+    let hasNumber = /\d/.test(query)
     try {
-      let found = await searchAddress(query, mine.signal)
-      options = found.portals
-      hint = found.hint
-      open = found.portals.length > 0
+      let found = []
+      if street && !hasNumber {
+        found = []
+        hint = `Escribí el número del portal (${street.town}).`
+      } else if hasNumber {
+        found = await searchPortals(query, street?.town ?? "", mine.signal)
+        hint = found.length ? "" : street
+          ? `No encontramos ese número en ${street.name} (${street.town}). Revisalo o probá con el portal más cercano.`
+          : `No encontramos esa dirección en la ${DELIVERY_REGION}. Probá elegir primero la calle de la lista.`
+      } else {
+        found = await searchStreets(query, mine.signal)
+        hint = found.length ? "" : query.replace(STREET_TYPE, "").trim().length < 3 ? "Seguí escribiendo el nombre de la calle." : `No encontramos esa calle en la ${DELIVERY_REGION}. Probá con una parte del nombre, por ejemplo: Colón.`
+      }
+      options = found
+      open = found.length > 0
       offline = false
     } catch (e) {
       if e.name != "AbortError" {
@@ -46,12 +69,21 @@ component AddressField(text: String, spot: Any, offline: Bool, invalid: Bool = f
   }
 
   fn pick(option) {
-    spot = option
-    text = option.label
     options = []
     open = false
     active = -1
-    hint = ""
+    if option.kind == "street" {
+      // La calle queda escrita y el foco sigue en el campo, para agregar el número.
+      street = option
+      text = `${option.name} `
+      hint = `Escribí el número del portal (${option.town}).`
+      document.getElementById("address-input")?.focus()
+    } else {
+      spot = option
+      text = option.full
+      street = null
+      hint = ""
+    }
   }
 
   fn keys(event) {
@@ -73,26 +105,32 @@ component AddressField(text: String, spot: Any, offline: Bool, invalid: Bool = f
   }
 
   column class="address-field" gap=2 {
-    input text label="Dirección de entrega (en València)" placeholder="Calle y número, ej. Calle de Colón 12" id="address-input" role="combobox" aria-autocomplete="list" aria-expanded=(open ? "true" : "false") aria-controls="address-options" aria-activedescendant=(open && active >= 0 ? `address-option-${active}` : null) aria-invalid=(invalid ? "true" : null) aria-describedby=(invalid ? "order-error" : null) on:input=changed(event.target.value) on:keydown=keys(event) on:blur=(setTimeout(() => open = false, 150))
-    text (open ? plural(options.length, "dirección encontrada", "direcciones encontradas") : "") class="sr-only" aria-live="polite"
+    input text label="Dirección de entrega" placeholder="Empezá por la calle, ej. Colón" id="address-input" role="combobox" aria-autocomplete="list" aria-expanded=(open ? "true" : "false") aria-controls="address-options" aria-activedescendant=(open && active >= 0 ? `address-option-${active}` : null) aria-invalid=(invalid ? "true" : null) aria-describedby=(invalid ? "order-error" : null) on:focus=loadCityStreets() on:input=changed(event.target.value) on:keydown=keys(event) on:blur=(setTimeout(() => open = false, 150))
+    text (open ? plural(options.length, "resultado", "resultados") : "") class="sr-only" aria-live="polite"
     if open {
       list id="address-options" role="listbox" class="address-options" aria-label="Direcciones encontradas" {
         for option, i in options key option.id {
-          item option.label id=`address-option-${i}` role="option" aria-selected=(i == active ? "true" : "false") class=(i == active ? "address-option is-active" : "address-option") on:mousedown=(event.preventDefault()) -> pick(option)
+          item id=`address-option-${i}` role="option" aria-selected=(i == active ? "true" : "false") class=(i == active ? "address-option is-active" : "address-option") on:mousedown=(event.preventDefault()) -> pick(option) {
+            text option.name class="address-main"
+            text (option.kind == "street" ? [option.town, option.alt].filter(Boolean).join(" · ") : `${option.postalCode} ${option.town}`) class="address-detail"
+          }
         }
+      }
+      if options.some(o => o.source == "osm") {
+        text "Calles: © colaboradores de OpenStreetMap" class="address-credit"
       }
     }
     if hint {
-      text hint class="address-hint"
+      text hint class="address-hint" aria-live="polite"
     }
     if offline {
-      text "No pudimos buscar direcciones ahora: escribila completa (calle, número y código postal) y la confirmamos al escribirte." class="address-hint"
+      text "No pudimos buscar direcciones ahora: escribila completa (calle, número, código postal y pueblo) y la confirmamos al escribirte." class="address-hint"
     }
     if spot {
       AddressMap lat=spot.lat lng=spot.lng
       row class="address-picked" gap=2 align=center {
         icon "map-pin" size=16
-        text `${spot.label}${spot.postalCode ? ` · ${spot.postalCode}` : ""}`
+        text `${spot.full}${spot.postalCode ? ` · ${spot.postalCode}` : ""}`
       }
     }
   }

@@ -75,7 +75,7 @@ component OrderSection() {
       code: orderCode(),
       name: name.trim(),
       phone: phone.trim(),
-      address: spot ? `${spot.label}${spot.postalCode ? ` (${spot.postalCode})` : ""}` : `${address.trim()} (sin verificar)`,
+      address: spot ? `${spot.full}${spot.postalCode ? ` (${spot.postalCode})` : ""}` : `${address.trim()} (sin verificar)`,
       mapsUrl: spot ? mapsLink(spot) : "",
       notes: notes.trim(),
       items: lines,
@@ -133,7 +133,7 @@ component OrderSection() {
         text "✓" class="placed-check" aria-hidden="true"
         if placed.via == "email" {
           title `¡Gracias, ${placed.name}!` tag=h3 class="placed-title"
-          text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega en Valencia.` class="placed-text"
+          text `Recibimos tu pedido ${placed.code}. Te vamos a escribir al ${placed.phone} para confirmarlo y coordinar la entrega.` class="placed-text"
         } else {
           title "Último paso: mandanos el pedido por DM" tag=h3 class="placed-title"
           if placed.failed {
@@ -186,7 +186,7 @@ component OrderSection() {
           }
           button (sending ? "Enviando…" : bags > 0 ? `Enviar pedido · ${eur(total)}` : "Enviar pedido") class="btn btn-mustard btn-block" disabled=sending
           text (ORDERS_EMAIL ? "Sin pago online: lo arreglamos cuando te escribamos." : "Al enviarlo, lo copiamos para que nos lo mandes por DM de Instagram.") class="form-hint"
-          text "Usamos tus datos solo para preparar y entregar este pedido. Para encontrar tu dirección usamos CartoCiudad (Instituto Geográfico Nacional)." class="form-hint"
+          text "Usamos tus datos solo para preparar y entregar este pedido. Para encontrar tu dirección usamos CartoCiudad (Instituto Geográfico Nacional) y Photon (OpenStreetMap)." class="form-hint"
         }
       }
     }

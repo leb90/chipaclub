@@ -4,7 +4,7 @@ test "suma variedades y calcula el total" {
   click "Agregar Chorizo colorado"
   click "Agregar Clásica"
   click "Sumar una bolsa de Clásica"
-  see "Envíos solo en Valencia"
+  see "Envíos solo en la Comunitat Valenciana"
   see "3 bolsas"
   see "Enviar pedido · 26 €"
 }
@@ -29,7 +29,7 @@ test "el ticket ajusta cantidades y total" {
 }
 
 test "preguntas frecuentes y pie" {
-  see "¿Hacen envíos fuera de Valencia?"
+  see "¿Hacen envíos fuera de la Comunitat Valenciana?"
   see "Hecho con"
   see "ArtScript"
 }
