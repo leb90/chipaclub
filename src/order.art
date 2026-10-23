@@ -77,6 +77,7 @@ fn orderText(o) {
     `Nombre: ${o.name}`,
     `Teléfono: ${o.phone}`,
     `Dirección: ${o.address}`,
+    o.mapsUrl ? `Ubicación: ${o.mapsUrl}` : "",
     o.notes ? `Notas: ${o.notes}` : "",
   ].join("\n").trim()
 }
@@ -98,6 +99,7 @@ fn sendByEmail(o) {
       "Teléfono": o.phone,
       "WhatsApp": whatsappLink(o.phone),
       "Dirección": o.address,
+      "Ubicación": o.mapsUrl || "sin verificar (el buscador de direcciones no respondió)",
       "Notas": o.notes || "—",
       "Fecha": new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid", dateStyle: "full", timeStyle: "short" }),
     }),

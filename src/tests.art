@@ -44,3 +44,11 @@ test "rechaza datos fuera de medida" {
   click "Enviar pedido · 8 €"
   see "entre 9 y 15 cifras"
 }
+
+test "la dirección tiene que salir del buscador" {
+  click "Agregar Chorizo colorado"
+  fill "Ej. Ana García" "Ana García"
+  fill "Ej. 600 123 456" "600 123 456"
+  click "Enviar pedido · 10 €"
+  see "Elegí tu dirección de la lista"
+}

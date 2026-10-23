@@ -1,0 +1,18 @@
+// Mapa del IGN centrado en la dirección elegida, con el pin en el medio. Se arma con teselas puestas
+// en su lugar (sin librería de mapas): se descargan solo cuando hay una dirección elegida.
+component AddressMap(lat: Number, lng: Number) {
+  state zoom = 17
+  computed tiles = mapTiles(lat, lng, zoom)
+
+  column class="address-map" {
+    for t in tiles key t.key {
+      image t.src alt="" class="map-tile" style=`left: calc(50% + ${t.left}px); top: calc(50% + ${t.top}px)`
+    }
+    text "" class="map-pin" aria-hidden="true"
+    column class="map-zoom" gap=1 {
+      button "+" aria-label="Acercar el mapa" disabled=(zoom >= 18) -> zoom++
+      button "−" aria-label="Alejar el mapa" disabled=(zoom <= 14) -> zoom--
+    }
+    text "Mapa © IGN · Direcciones CartoCiudad" class="map-credit"
+  }
+}

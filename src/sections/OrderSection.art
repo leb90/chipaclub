@@ -3,6 +3,8 @@ component OrderSection() {
   state name = ""
   state phone = ""
   state address = ""
+  state spot: Any = null
+  state geoOffline = false
   state notes = ""
   state sending = false
   state error = ""
@@ -10,10 +12,6 @@ component OrderSection() {
   state copied = false
   state openedAt = Date.now()
   ref box
-  ref nameField
-  ref phoneField
-  ref addressField
-  ref notesField
   ref placedBox
 
   mount {
@@ -39,8 +37,9 @@ component OrderSection() {
   fn reject(message, field) {
     error = message
     errorField = field
-    let input = { name: nameField, phone: phoneField, address: addressField, notes: notesField }[field]
-    input?.focus()
+    if field {
+      document.getElementById(`${field}-input`)?.focus()
+    }
   }
 
   fn submit() {
@@ -59,10 +58,14 @@ component OrderSection() {
     if digits.length < 9 || digits.length > 15 {
       return reject("Revisá el teléfono: necesitamos entre 9 y 15 cifras.", "phone")
     }
-    if address.trim().length < 6 {
+    // La dirección sale del buscador (lo libre va en Notas); a mano solo si el buscador no anda.
+    if !spot && !geoOffline {
+      return reject("Elegí tu dirección de la lista: escribí la calle y el número.", "address")
+    }
+    if !spot && address.trim().length < 6 {
       return reject("Necesitamos la dirección de entrega.", "address")
     }
-    if address.trim().length > 200 {
+    if !spot && address.trim().length > 200 {
       return reject("La dirección es muy larga: usá hasta 200 caracteres.", "address")
     }
     if notes.trim().length > 500 {
@@ -72,7 +75,8 @@ component OrderSection() {
       code: orderCode(),
       name: name.trim(),
       phone: phone.trim(),
-      address: address.trim(),
+      address: spot ? `${spot.label}${spot.postalCode ? ` (${spot.postalCode})` : ""}` : `${address.trim()} (sin verificar)`,
+      mapsUrl: spot ? mapsLink(spot) : "",
       notes: notes.trim(),
       items: lines,
       total,
@@ -169,20 +173,20 @@ component OrderSection() {
           }
         }
         form class="order-form" gap=4 -> submit() {
-          input name label="Nombre y apellido" placeholder="Ej. Ana García" ref=nameField aria-invalid=(errorField == "name" ? "true" : null) aria-describedby=(errorField == "name" ? "order-error" : null)
-          input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456" ref=phoneField aria-invalid=(errorField == "phone" ? "true" : null) aria-describedby=(errorField == "phone" ? "order-error" : null)
+          input name label="Nombre y apellido" placeholder="Ej. Ana García" id="name-input" aria-invalid=(errorField == "name" ? "true" : null) aria-describedby=(errorField == "name" ? "order-error" : null)
+          input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456" id="phone-input" aria-invalid=(errorField == "phone" ? "true" : null) aria-describedby=(errorField == "phone" ? "order-error" : null)
           row class="zone-note" gap=2 align=center role="note" {
             icon "map-pin" size=18
             text `${SHIPPING}.`
           }
-          textarea address label="Dirección de entrega (en Valencia)" placeholder="Calle, número, piso y código postal" rows=2 ref=addressField aria-invalid=(errorField == "address" ? "true" : null) aria-describedby=(errorField == "address" ? "order-error" : null)
-          textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2 ref=notesField aria-invalid=(errorField == "notes" ? "true" : null) aria-describedby=(errorField == "notes" ? "order-error" : null)
+          AddressField text=address spot=spot offline=geoOffline invalid=(errorField == "address")
+          textarea notes label="Notas (opcional)" placeholder="Piso y puerta, horario que te viene bien, timbre…" rows=2 id="notes-input" aria-invalid=(errorField == "notes" ? "true" : null) aria-describedby=(errorField == "notes" ? "order-error" : null)
           if error {
             text error class="form-error" role="alert" id="order-error"
           }
           button (sending ? "Enviando…" : bags > 0 ? `Enviar pedido · ${eur(total)}` : "Enviar pedido") class="btn btn-mustard btn-block" disabled=sending
           text (ORDERS_EMAIL ? "Sin pago online: lo arreglamos cuando te escribamos." : "Al enviarlo, lo copiamos para que nos lo mandes por DM de Instagram.") class="form-hint"
-          text "Usamos tus datos solo para preparar y entregar este pedido." class="form-hint"
+          text "Usamos tus datos solo para preparar y entregar este pedido. Para encontrar tu dirección usamos CartoCiudad (Instituto Geográfico Nacional)." class="form-hint"
         }
       }
     }

@@ -21,8 +21,9 @@ Hecha con [ArtScript](https://artscript.dev). Todos los `.art` de `src/` forman 
 | [src/config.art](src/config.art) | **Lo que se cambia seguido:** email de pedidos, variedades y precios, aviso de envíos, pasos, preguntas frecuentes (`FAQS`) |
 | [src/app.art](src/app.art) | La página: las secciones en orden |
 | [src/sections/](src/sections/) | Una sección por archivo: `Nav`, `Hero`, `Products`, `HowItWorks`, `Club`, `Faq`, `OrderSection` (formulario, envío y confirmación), `Footer`, `FloatingCart` |
-| [src/ui/](src/ui/) | Piezas reutilizables: `SectionHead`, `Stepper`, `ProductCard` |
+| [src/ui/](src/ui/) | Piezas reutilizables: `SectionHead`, `Stepper`, `ProductCard`, `AddressField` (dirección con sugerencias) y `AddressMap` (mapa con el pin) |
 | [src/cart.art](src/cart.art) | El carrito y el formato de precios |
+| [src/address.art](src/address.art) | Búsqueda de direcciones (CartoCiudad) y teselas del mapa (IGN) |
 | [src/order.art](src/order.art) | Código de pedido, texto para DM, envío por email y los límites contra pedidos repetidos |
 | [src/tests.art](src/tests.art) | Tests de los flujos principales |
 | [src/theme.css](src/theme.css) | Colores, tipografías y estilos |
@@ -42,6 +43,15 @@ Para cambiar el destino:
 4. Opcional: en el email de activación FormSubmit da un alias aleatorio (algo como `a1b2c3d4...`). Si lo ponés en `ORDERS_EMAIL` en lugar del email, la dirección no queda visible en el código de la página.
 
 Mientras `ORDERS_EMAIL` esté vacío, o si el envío falla, el pedido no se pierde: se copia al portapapeles y se le pide al cliente que lo mande por DM de Instagram.
+
+## Dirección de entrega
+
+La dirección se elige de una lista de sugerencias, no se escribe libre (lo libre, como piso y puerta, va en Notas):
+
+- Las sugerencias salen de [CartoCiudad](https://www.cartociudad.es), el buscador oficial de direcciones de España (Instituto Geográfico Nacional): gratis, sin clave y con número de portal. Solo se ofrecen portales dentro de la zona de envío; sin número, la web lo pide.
+- Al elegir, aparece el mapa del IGN con el pin en la dirección. El pedido llega con la dirección normalizada, el código postal y un link a Google Maps con la ubicación exacta.
+- La zona de envío está en [src/config.art](src/config.art): `DELIVERY_CITY` y `DELIVERY_MUNI_CODES` (46250 es València ciudad). Para sumar otro municipio, agregá el `muniCode` que devuelve CartoCiudad para una dirección de ahí.
+- Si el buscador no responde, se puede escribir la dirección a mano y el pedido llega marcado "sin verificar", para no perder ventas.
 
 ## Pedidos repetidos o en masa
 

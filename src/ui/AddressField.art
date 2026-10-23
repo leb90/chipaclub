@@ -1,0 +1,99 @@
+// Dirección de entrega con sugerencias de CartoCiudad (combobox accesible: ↑ ↓ Enter Esc) y el mapa
+// del lugar elegido. `spot` es la dirección elegida de la lista ({ label, postalCode, lat, lng }) o
+// null; `offline` queda en true si el buscador no responde (entonces vale la dirección escrita).
+component AddressField(text: String, spot: Any, offline: Bool, invalid: Bool = false) {
+  state options: Any[] = []
+  state open = false
+  state active = -1
+  state hint = ""
+  ref timer
+  ref pending
+
+  // Recibe lo escrito desde el evento: on:input corre antes de que `text` se actualice.
+  fn changed(value) {
+    spot = null
+    active = -1
+    clearTimeout(timer)
+    let query = value.trim()
+    if query.length < 4 {
+      options = []
+      open = false
+      hint = ""
+      return
+    }
+    timer = setTimeout(() => lookup(query), 300)
+  }
+
+  fn lookup(query) {
+    pending?.abort()
+    let mine = new AbortController()
+    pending = mine
+    try {
+      let found = await searchAddress(query, mine.signal)
+      options = found.portals
+      hint = found.hint
+      open = found.portals.length > 0
+      offline = false
+    } catch (e) {
+      if e.name != "AbortError" {
+        console.error("Chipa Club: el buscador de direcciones no respondió:", e)
+        options = []
+        open = false
+        hint = ""
+        offline = true
+      }
+    }
+  }
+
+  fn pick(option) {
+    spot = option
+    text = option.label
+    options = []
+    open = false
+    active = -1
+    hint = ""
+  }
+
+  fn keys(event) {
+    if !open || options.length == 0 {
+      return
+    }
+    if event.key == "ArrowDown" {
+      event.preventDefault()
+      active = (active + 1) % options.length
+    } else if event.key == "ArrowUp" {
+      event.preventDefault()
+      active = (active - 1 + options.length) % options.length
+    } else if event.key == "Enter" && active >= 0 {
+      event.preventDefault()
+      pick(options[active])
+    } else if event.key == "Escape" {
+      open = false
+    }
+  }
+
+  column class="address-field" gap=2 {
+    input text label="Dirección de entrega (en València)" placeholder="Calle y número, ej. Calle de Colón 12" id="address-input" role="combobox" aria-autocomplete="list" aria-expanded=(open ? "true" : "false") aria-controls="address-options" aria-activedescendant=(open && active >= 0 ? `address-option-${active}` : null) aria-invalid=(invalid ? "true" : null) aria-describedby=(invalid ? "order-error" : null) on:input=changed(event.target.value) on:keydown=keys(event) on:blur=(setTimeout(() => open = false, 150))
+    text (open ? plural(options.length, "dirección encontrada", "direcciones encontradas") : "") class="sr-only" aria-live="polite"
+    if open {
+      list id="address-options" role="listbox" class="address-options" aria-label="Direcciones encontradas" {
+        for option, i in options key option.id {
+          item option.label id=`address-option-${i}` role="option" aria-selected=(i == active ? "true" : "false") class=(i == active ? "address-option is-active" : "address-option") on:mousedown=(event.preventDefault()) -> pick(option)
+        }
+      }
+    }
+    if hint {
+      text hint class="address-hint"
+    }
+    if offline {
+      text "No pudimos buscar direcciones ahora: escribila completa (calle, número y código postal) y la confirmamos al escribirte." class="address-hint"
+    }
+    if spot {
+      AddressMap lat=spot.lat lng=spot.lng
+      row class="address-picked" gap=2 align=center {
+        icon "map-pin" size=16
+        text `${spot.label}${spot.postalCode ? ` · ${spot.postalCode}` : ""}`
+      }
+    }
+  }
+}

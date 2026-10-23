@@ -1,0 +1,63 @@
+// La dirección de entrega: búsqueda en CartoCiudad (buscador oficial de direcciones de España, del
+// IGN; gratis, sin clave) y el mapa base del IGN. Ninguno necesita servidor.
+
+const GEOCODER = "https://www.cartociudad.es/geocoder/api/geocoder/candidates"
+const MAP_TILES = "https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png"
+const TILE = 256
+// Mitad del mapa más grande que se muestra (el formulario no pasa de ~500 × 220 px): con eso
+// alcanzan 6 teselas como mucho.
+const MAP_HALF_W = 250
+const MAP_HALF_H = 115
+const LOWER_WORDS = ["de", "del", "la", "las", "los", "el", "y", "i"]
+
+// "CALLE COLÓN 12, València" → "Calle Colón 12, València" (también "D'ALBORS" → "D'Albors").
+fn prettyAddress(text) {
+  let [street, ...rest] = text.split(", ")
+  let words = street.toLowerCase().split(" ").map((w, i) => i > 0 && LOWER_WORDS.includes(w) ? w : w.replace(/(^|['’])(\p{L})/gu, (m, before, letter) => before + letter.toUpperCase()))
+  return [words.join(" "), ...rest].join(", ")
+}
+
+// Hasta 5 portales (calle con número) dentro de la zona de envío, y un consejo cuando no hay.
+fn searchAddress(query, signal) {
+  let res = await fetch(`${GEOCODER}?q=${encodeURIComponent(query)}&limit=15&municipio_filter=${encodeURIComponent(DELIVERY_CITY)}`, { signal })
+  if !res.ok {
+    throw new Error(`CartoCiudad respondió ${res.status}`)
+  }
+  let found = await res.json()
+  let inZone = found.filter(c => DELIVERY_MUNI_CODES.includes(c.muniCode))
+  let portals = inZone
+    .filter(c => c.type == "portal" && c.lat && c.lng)
+    .slice(0, 5)
+    .map(c => ({ id: c.id, label: prettyAddress(c.address), postalCode: c.postalCode ?? "", lat: c.lat, lng: c.lng }))
+  let hint = ""
+  // Sin número no hay portal que elegir (CartoCiudad no siempre devuelve la calle sola).
+  if portals.length == 0 {
+    hint = !/\d/.test(query) || inZone.some(c => c.type == "callejero")
+      ? "Agregá el número del portal, por ejemplo: Calle de Colón 12."
+      : `No encontramos esa dirección dentro de ${DELIVERY_CITY} (solo enviamos en la ciudad). Probá con la calle y el número.`
+  }
+  return { portals, hint }
+}
+
+fn mapsLink(spot) {
+  return `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`
+}
+
+// Posición del punto en píxeles del mapa del mundo a ese zoom (proyección Web Mercator).
+fn worldPixel(lat, lng, zoom) {
+  let size = TILE * 2 ** zoom
+  let s = Math.sin(lat * Math.PI / 180)
+  return { x: (lng + 180) / 360 * size, y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * size }
+}
+
+// Las teselas que cubren el mapa, con su posición respecto del centro (donde está el pin).
+fn mapTiles(lat, lng, zoom) {
+  let p = worldPixel(lat, lng, zoom)
+  let tiles = []
+  for (let x = Math.floor((p.x - MAP_HALF_W) / TILE); x <= Math.floor((p.x + MAP_HALF_W) / TILE); x++) {
+    for (let y = Math.floor((p.y - MAP_HALF_H) / TILE); y <= Math.floor((p.y + MAP_HALF_H) / TILE); y++) {
+      tiles.push({ key: `${zoom}/${x}/${y}`, src: `${MAP_TILES}&TileMatrix=${zoom}&TileCol=${x}&TileRow=${y}`, left: Math.round(x * TILE - p.x), top: Math.round(y * TILE - p.y) })
+    }
+  }
+  return tiles
+}
