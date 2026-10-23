@@ -11,7 +11,7 @@
     "build:pages": "art build --base /chipaclub --prerender --site https://leb90.github.io/chipaclub"
   },
   "devDependencies": {
-    "@artscript/core": "^0.2.14",
+    "@artscript/core": "^0.2.15",
     "@happy-dom/global-registrator": "^20.14.5"
   }
 }

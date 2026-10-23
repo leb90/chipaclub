@@ -8,16 +8,14 @@ Hecha con [ArtScript](https://artscript.dev). Todos los `.art` de `src/` forman 
 
 | Archivo | Qué tiene |
 |---|---|
-| [src/config.art](src/config.art) | **Lo que se cambia seguido:** email de pedidos, variedades y precios, aviso de envíos, pasos |
+| [src/config.art](src/config.art) | **Lo que se cambia seguido:** email de pedidos, variedades y precios, aviso de envíos, pasos, preguntas frecuentes (`FAQS`) |
 | [src/app.art](src/app.art) | La página: las secciones en orden |
-| [src/sections/](src/sections/) | Una sección por archivo: `Nav`, `Hero`, `Products`, `HowItWorks`, `Club`, `OrderSection` (formulario, envío y confirmación), `Footer`, `FloatingCart` |
+| [src/sections/](src/sections/) | Una sección por archivo: `Nav`, `Hero`, `Products`, `HowItWorks`, `Club`, `Faq`, `OrderSection` (formulario, envío y confirmación), `Footer`, `FloatingCart` |
 | [src/ui/](src/ui/) | Piezas reutilizables: `SectionHead`, `Stepper`, `ProductCard` |
 | [src/cart.art](src/cart.art) | El carrito y el formato de precios |
-| [src/order.art](src/order.art) | Código de pedido, texto para DM y envío por email |
+| [src/order.art](src/order.art) | Código de pedido, texto para DM, envío por email y los límites contra pedidos repetidos |
 | [src/tests.art](src/tests.art) | Tests de los flujos principales |
 | [src/theme.css](src/theme.css) | Colores, tipografías y estilos |
-
-Los archivos se cargan en orden alfabético, así que el estado compartido no puede usar al arrancar datos de un archivo que va después (por eso el carrito empieza vacío).
 
 ## Activar los pedidos por email
 
@@ -35,6 +33,17 @@ Para cambiar el destino:
 
 Mientras `ORDERS_EMAIL` esté vacío, o si el envío falla, el pedido no se pierde: se copia al portapapeles y se le pide al cliente que lo mande por DM de Instagram.
 
+## Pedidos repetidos o en masa
+
+La web frena, desde el navegador de quien pide:
+
+- enviar a los pocos segundos de abrir la página (lo que hace un bot), con un aviso para volver a tocar Enviar;
+- el mismo pedido (mismo teléfono y mismas cantidades) dentro de 30 minutos;
+- más de 3 pedidos por hora;
+- datos fuera de medida (nombre de más de 80 caracteres, teléfono fuera de 9–15 cifras, dirección de más de 200, notas de más de 500).
+
+Los números están arriba de [src/order.art](src/order.art). Esto corta el abuso hecho desde la página, pero no a alguien que mande pedidos directo a FormSubmit con un programa: para eso, el primer paso es usar el alias de FormSubmit en `ORDERS_EMAIL` (así el Gmail no aparece en el código), y si igual llegan pedidos basura, poner una verificación anti-bots (Cloudflare Turnstile) con un pequeño servidor que la compruebe antes de reenviar el email.
+
 ## Cambiar productos o precios
 
 Están en la lista `PRODUCTS` de [src/config.art](src/config.art). Para agregar una variedad, sumá una entrada y poné su foto en [public/photos/](public/photos/).
@@ -42,6 +51,8 @@ Están en la lista `PRODUCTS` de [src/config.art](src/config.art). Para agregar 
 El aviso de envíos ("Envíos solo en Valencia") es la constante `SHIPPING` del mismo archivo: aparece en la franja de arriba, la portada, las variedades, el formulario y el pie.
 
 ## Fotos
+
+La página usa las versiones `.webp` (más livianas, del tamaño en que se muestran); los `.jpg` y `.png` son los originales, y el póster de chorizo es la imagen al compartir el link.
 
 | Archivo | Qué es |
 |---|---|

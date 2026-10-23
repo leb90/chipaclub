@@ -1,12 +1,19 @@
 component Footer() {
   column tag=footer class="footer wrap" gap=4 align=center {
-    image "/photos/logo-chipa-club.png" alt="Chipa Club" class="footer-logo"
+    image "/photos/logo-chipa-club.webp" alt="Chipa Club" class="footer-logo" width=264 height=207
     text "Elegí ser feliz ♡" class="hand-note"
     row class="footer-links" gap=5 wrap justify=center {
-      text `🚚 ${SHIPPING}`
-      link `@${INSTAGRAM}` href=INSTAGRAM_URL target="_blank"
-      link "Pedidos también por DM" href=INSTAGRAM_DM target="_blank"
+      row gap=2 align=center {
+        text "🚚" aria-hidden="true"
+        text SHIPPING
+      }
+      link `@${INSTAGRAM}` href=INSTAGRAM_URL target="_blank" aria-label=`@${INSTAGRAM} en Instagram (se abre en otra pestaña)`
+      link "Pedidos también por DM" href=INSTAGRAM_DM target="_blank" aria-label="Pedidos también por DM en Instagram (se abre en otra pestaña)"
     }
     text `© ${new Date().getFullYear()} Chipa Club` class="footer-copy"
+    row class="made-with" gap=1 justify=center {
+      text "Hecho con"
+      link "ArtScript" href="https://artscript.dev" target="_blank" aria-label="ArtScript (se abre en otra pestaña)"
+    }
   }
 }

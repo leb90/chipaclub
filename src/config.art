@@ -29,7 +29,7 @@ const PRODUCTS = [
     name: "Chorizo colorado",
     desc: "Con trocitos de chorizo colorado y mucho queso. ¡Amor a primera mordida!",
     price: 10,
-    photo: "/photos/chipa-chorizo-colorado-detalle.jpg",
+    photo: "/photos/chipa-chorizo-colorado-detalle.webp",
     alt: "Chipa con trocitos de chorizo colorado",
     tag: "El más amado",
   },
@@ -38,7 +38,7 @@ const PRODUCTS = [
     name: "Queso azul y nuez",
     desc: "Con queso azul, nuez y mucho queso. Un sabor único, que sorprende en cada bocado.",
     price: 10,
-    photo: "/photos/chipa-queso-azul-nuez-detalle.jpg",
+    photo: "/photos/chipa-queso-azul-nuez-detalle.webp",
     alt: "Chipa con queso azul y trozos de nuez",
     tag: null,
   },
@@ -47,7 +47,7 @@ const PRODUCTS = [
     name: "Longaniza de Pascua",
     desc: "Con trocitos de longaniza de Pascua y mucho queso. Un clásico con todo el sabor de la tradición.",
     price: 10,
-    photo: "/photos/chipa-longaniza-pascua-detalle.jpg",
+    photo: "/photos/chipa-longaniza-pascua-detalle.webp",
     alt: "Chipa con trocitos de longaniza de Pascua",
     tag: null,
   },
@@ -56,7 +56,7 @@ const PRODUCTS = [
     name: "Clásica",
     desc: "Solo queso. La de siempre, la que nunca falla.",
     price: 8,
-    photo: "/photos/chipa-clasica-mano.jpg",
+    photo: "/photos/chipa-clasica-mano.webp",
     alt: "Una chipa clásica de queso en la palma de la mano",
     tag: null,
   },
@@ -66,4 +66,13 @@ const STEPS = [
   { n: "1", head: "Elegí tus variedades", body: `Bolsas de ${BAG}: combiná los sabores que quieras.` },
   { n: "2", head: "Dejanos tus datos", body: `Te escribimos para confirmar el pedido y coordinar la entrega. ${SHIPPING}.` },
   { n: "3", head: "Al horno y a disfrutar", body: "Llega congelada: la horneás cuando te apetezca y sale calentita, como recién hecha." },
+]
+
+// Preguntas frecuentes: solo lo que Chipa Club ya confirmó (zona, pedidos, pago, bolsa, conservación).
+const FAQS = [
+  { q: "¿Hacen envíos fuera de Valencia?", a: "No: por ahora los envíos son solo en Valencia." },
+  { q: "¿Cómo hago un pedido?", a: "Elegí tus variedades, completá tus datos en el formulario y envialo. También podés pedir por DM en Instagram." },
+  { q: "¿Cómo se paga?", a: "No hay pago online: te escribimos para confirmar el pedido y coordinar el pago y la entrega." },
+  { q: "¿Cuánto trae cada bolsa?", a: `Cada bolsa trae ${BAG} de chipa.` },
+  { q: "¿Cómo la conservo?", a: "Llega congelada: guardala en el congelador y horneala cuando te apetezca." },
 ]

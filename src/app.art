@@ -1,15 +1,19 @@
 // La página: las secciones en orden. Datos y textos en config.art, piezas en ui/ y sections/.
 page Home "/" {
-  meta title="Chipa Club · Chipa congelada lista para hornear" description=`Chipa congelada, lista para hornear y disfrutar calentita: chorizo colorado, queso azul y nuez, longaniza de Pascua y la clásica. ${SHIPPING}.` image=`${SITE_URL}/photos/chipa-chorizo-colorado.jpg`
+  meta title="Chipa Club · Chipa congelada en Valencia, lista para hornear" description=`Chipá congelada lista para hornear: chorizo colorado, queso azul y nuez, longaniza de Pascua y clásica. Bolsas de ${BAG} desde ${eur(Math.min(...PRODUCTS.map(p => p.price)))}. ${SHIPPING}.` image=`${SITE_URL}/photos/chipa-chorizo-colorado.jpg`
 
   column class="site" {
+    link "Saltar al contenido" href="#contenido" class="skip-link"
     Topbar
     Nav
-    Hero
-    Products
-    HowItWorks
-    Club
-    OrderSection
+    column tag=main id="contenido" class="main" tabindex="-1" {
+      Hero
+      Products
+      HowItWorks
+      Club
+      Faq
+      OrderSection
+    }
     Footer
     FloatingCart
   }

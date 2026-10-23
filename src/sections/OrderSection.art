@@ -6,8 +6,15 @@ component OrderSection() {
   state notes = ""
   state sending = false
   state error = ""
+  state errorField = ""
   state copied = false
+  state openedAt = Date.now()
   ref box
+  ref nameField
+  ref phoneField
+  ref addressField
+  ref notesField
+  ref placedBox
 
   mount {
     let io = new IntersectionObserver(entries => {
@@ -28,23 +35,38 @@ component OrderSection() {
     }
   }
 
+  // Muestra qué corregir y lleva el foco a ese campo (field: "" cuando no es un campo).
+  fn reject(message, field) {
+    error = message
+    errorField = field
+    let input = { name: nameField, phone: phoneField, address: addressField, notes: notesField }[field]
+    input?.focus()
+  }
+
   fn submit() {
     error = ""
+    errorField = ""
+    let digits = phone.replace(/\D/g, "").replace(/^00/, "")
     if bags == 0 {
-      error = "Elegí al menos una bolsa de chipa."
-      return
+      return reject("Elegí al menos una bolsa de chipa.", "")
     }
     if name.trim().length < 2 {
-      error = "Decinos tu nombre."
-      return
+      return reject("Decinos tu nombre.", "name")
     }
-    if phone.replace(/\D/g, "").length < 9 {
-      error = "Revisá el teléfono: necesitamos al menos 9 cifras."
-      return
+    if name.trim().length > 80 {
+      return reject("El nombre es muy largo: usá hasta 80 caracteres.", "name")
+    }
+    if digits.length < 9 || digits.length > 15 {
+      return reject("Revisá el teléfono: necesitamos entre 9 y 15 cifras.", "phone")
     }
     if address.trim().length < 6 {
-      error = "Necesitamos la dirección de entrega."
-      return
+      return reject("Necesitamos la dirección de entrega.", "address")
+    }
+    if address.trim().length > 200 {
+      return reject("La dirección es muy larga: usá hasta 200 caracteres.", "address")
+    }
+    if notes.trim().length > 500 {
+      return reject("Las notas son muy largas: usá hasta 500 caracteres.", "notes")
     }
     let order = {
       code: orderCode(),
@@ -56,6 +78,10 @@ component OrderSection() {
       total,
       via: "email",
       failed: false,
+    }
+    let hold = holdReason(order, openedAt)
+    if hold {
+      return reject(hold, "")
     }
     if ORDERS_EMAIL {
       sending = true
@@ -71,11 +97,15 @@ component OrderSection() {
         console.error("Chipa Club: el pedido no se pudo enviar por email:", problem)
         order.via = "dm"
         order.failed = true
+      } else {
+        rememberOrder(order)
       }
     } else {
       order.via = "dm"
     }
     placed = order
+    // La confirmación reemplaza al formulario: el foco va a ella (y el lector de pantalla la lee).
+    requestAnimationFrame(() => placedBox?.focus())
     if order.via == "dm" {
       await copyOrder()
     }
@@ -83,10 +113,11 @@ component OrderSection() {
     notes = ""
   }
 
+  // Vuelve a las variedades con los datos del cliente ya escritos (navigate() rearmaría la página).
   fn another() {
     placed = null
     copied = false
-    navigate("/#variedades")
+    document.getElementById("variedades")?.scrollIntoView()
   }
 
   column tag=section id="pedido" class="order wrap" ref=box {
@@ -94,7 +125,7 @@ component OrderSection() {
       text `Completá tus datos y te escribimos para confirmar y coordinar la entrega. ${SHIPPING}.` class="section-sub"
     }
     if placed {
-      column class="placed" gap=4 align=center animate=pop {
+      column class="placed" gap=4 align=center animate=pop ref=placedBox tabindex="-1" {
         text "✓" class="placed-check" aria-hidden="true"
         if placed.via == "email" {
           title `¡Gracias, ${placed.name}!` tag=h3 class="placed-title"
@@ -107,7 +138,7 @@ component OrderSection() {
           text (copied ? "Ya copiamos tu pedido. Abrí el chat de Instagram, pegalo y envialo." : "Copiá tu pedido, abrí el chat de Instagram, pegalo y envialo.") class="placed-text"
           text orderText(placed) class="placed-ticket" tag=pre
           row gap=3 wrap justify=center {
-            link href=INSTAGRAM_DM target="_blank" class="btn btn-mustard" {
+            link href=INSTAGRAM_DM target="_blank" class="btn btn-mustard" aria-label="Abrir el chat de Instagram (se abre en otra pestaña)" {
               icon "send" size=18
               text "Abrir el chat de Instagram"
             }
@@ -138,16 +169,16 @@ component OrderSection() {
           }
         }
         form class="order-form" gap=4 -> submit() {
-          input name label="Nombre y apellido" placeholder="Ej. Ana García"
-          input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456"
+          input name label="Nombre y apellido" placeholder="Ej. Ana García" ref=nameField aria-invalid=(errorField == "name" ? "true" : null) aria-describedby=(errorField == "name" ? "order-error" : null)
+          input phone type=tel label="Teléfono" placeholder="Ej. 600 123 456" ref=phoneField aria-invalid=(errorField == "phone" ? "true" : null) aria-describedby=(errorField == "phone" ? "order-error" : null)
           row class="zone-note" gap=2 align=center role="note" {
             icon "map-pin" size=18
             text `${SHIPPING}.`
           }
-          textarea address label="Dirección de entrega (en Valencia)" placeholder="Calle, número, piso y código postal" rows=2
-          textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2
+          textarea address label="Dirección de entrega (en Valencia)" placeholder="Calle, número, piso y código postal" rows=2 ref=addressField aria-invalid=(errorField == "address" ? "true" : null) aria-describedby=(errorField == "address" ? "order-error" : null)
+          textarea notes label="Notas (opcional)" placeholder="Horario que te viene bien, timbre, lo que necesites" rows=2 ref=notesField aria-invalid=(errorField == "notes" ? "true" : null) aria-describedby=(errorField == "notes" ? "order-error" : null)
           if error {
-            text error class="form-error" role="alert"
+            text error class="form-error" role="alert" id="order-error"
           }
           button (sending ? "Enviando…" : bags > 0 ? `Enviar pedido · ${eur(total)}` : "Enviar pedido") class="btn btn-mustard btn-block" disabled=sending
           text (ORDERS_EMAIL ? "Sin pago online: lo arreglamos cuando te escribamos." : "Al enviarlo, lo copiamos para que nos lo mandes por DM de Instagram.") class="form-hint"

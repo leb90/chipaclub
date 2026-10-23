@@ -9,14 +9,15 @@ component Topbar() {
 component Nav() {
   row tag=header class="nav" justify=between align=center {
     link href="#inicio" class="nav-logo" aria-label="Chipa Club, inicio" {
-      image "/photos/logo-chipa-club.png" alt="Chipa Club"
+      image "/photos/logo-chipa-club.webp" alt="Chipa Club" width=264 height=207
     }
-    row tag=nav class="nav-links" gap=6 align=center {
+    row tag=nav class="nav-links" gap=6 align=center aria-label="Secciones" {
       link "Variedades" href="#variedades"
       link "Cómo funciona" href="#como-funciona"
       link "El club" href="#el-club"
+      link "Preguntas" href="#preguntas"
     }
-    link href="#pedido" class="nav-cart" {
+    link href="#pedido" class="nav-cart" aria-label=(bags > 0 ? `Ver tu pedido: ${plural(bags, "bolsa", "bolsas")}` : null) {
       icon "shopping-bag" size=18
       text (bags > 0 ? plural(bags, "bolsa", "bolsas") : "Pedir")
     }

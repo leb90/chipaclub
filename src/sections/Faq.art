@@ -1,0 +1,14 @@
+// Preguntas frecuentes: cada una se abre y se cierra sola (details/summary, accesible con teclado).
+component Faq() {
+  column tag=section id="preguntas" class="section wrap" gap=8 {
+    SectionHead kicker="Preguntas frecuentes" heading="Lo que más nos preguntan"
+    column class="faq-list" gap=3 {
+      for f in FAQS key f.q {
+        column tag=details class="faq-item" {
+          text f.q tag=summary class="faq-q"
+          text f.a tag=p class="faq-a"
+        }
+      }
+    }
+  }
+}

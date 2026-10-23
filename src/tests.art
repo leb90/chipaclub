@@ -27,3 +27,20 @@ test "el ticket ajusta cantidades y total" {
   see "Enviar pedido · 10 €"
   see "Sin pago online"
 }
+
+test "preguntas frecuentes y pie" {
+  see "¿Hacen envíos fuera de Valencia?"
+  see "Hecho con"
+  see "ArtScript"
+}
+
+test "rechaza datos fuera de medida" {
+  click "Agregar Clásica"
+  fill "Ej. Ana García" "Ana García Ana García Ana García Ana García Ana García Ana García Ana García Ana García"
+  click "Enviar pedido · 8 €"
+  see "El nombre es muy largo"
+  fill "Ej. Ana García" "Ana García"
+  fill "Ej. 600 123 456" "6001234567890123"
+  click "Enviar pedido · 8 €"
+  see "entre 9 y 15 cifras"
+}

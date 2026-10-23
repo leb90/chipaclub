@@ -4,6 +4,52 @@
 state placed: Any = null
 state orderInView = false
 
+// Límites contra pedidos repetidos o en masa desde la web. Se cuentan en este navegador: frenan
+// los envíos repetidos y el abuso desde la página, no a quien escriba directo a FormSubmit.
+const MIN_SECONDS_ON_PAGE = 4
+const MAX_ORDERS_PER_HOUR = 3
+const REPEAT_MINUTES = 30
+const SENT_KEY = "chipaclub-pedidos"
+
+// Los pedidos enviados desde este navegador en las últimas 24 horas: [{ code, at, key }].
+fn sentOrders() {
+  try {
+    let list = JSON.parse(localStorage.getItem(SENT_KEY) ?? "[]")
+    return Array.isArray(list) ? list.filter(s => Date.now() - s.at < 24 * 3600 * 1000) : []
+  } catch (e) {
+    return []
+  }
+}
+
+// El mismo teléfono con las mismas cantidades es el mismo pedido.
+fn orderKey(o) {
+  return o.phone.replace(/\D/g, "") + "|" + o.items.map(l => `${l.id}:${l.qty}`).join(",")
+}
+
+fn rememberOrder(o) {
+  try {
+    localStorage.setItem(SENT_KEY, JSON.stringify([...sentOrders(), { code: o.code, at: Date.now(), key: orderKey(o) }]))
+  } catch (e) {
+    // sin almacenamiento (modo privado): el pedido ya salió, solo no se recuerda
+  }
+}
+
+// Por qué este pedido no sale ahora, o "" si puede salir.
+fn holdReason(o, openedAt) {
+  if Date.now() - openedAt < MIN_SECONDS_ON_PAGE * 1000 {
+    return "Un segundo: revisá tu pedido y volvé a tocar Enviar."
+  }
+  let recent = sentOrders()
+  let same = recent.find(s => s.key == orderKey(o) && Date.now() - s.at < REPEAT_MINUTES * 60 * 1000)
+  if same {
+    return `Ya recibimos este mismo pedido hace un rato (${same.code}). Si querés cambiar algo, escribinos por DM.`
+  }
+  if recent.filter(s => Date.now() - s.at < 3600 * 1000).length >= MAX_ORDERS_PER_HOUR {
+    return "Ya enviaste varios pedidos en la última hora. Si necesitás otro, escribinos por DM y lo vemos."
+  }
+  return ""
+}
+
 // Un código corto para seguir el pedido por teléfono o DM: CC-7K2M.
 fn orderCode() {
   let abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
